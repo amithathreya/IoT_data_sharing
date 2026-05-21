@@ -1,0 +1,125 @@
+services:
+  node1:
+    image: hyperledger/besu:24.12.0
+    container_name: besu-node1
+    volumes:
+      - ./genesis.json:/config/genesis.json
+      - ./node1/data:/data
+    command: >
+      --data-path=/data
+      --genesis-file=/config/genesis.json
+      --rpc-http-enabled
+      --rpc-http-api=ETH,NET,IBFT,WEB3
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8545
+      --p2p-port=30303
+      --p2p-host=172.18.0.2
+      --network-id=1337
+      --host-allowlist="*"
+      --rpc-http-cors-origins="*"
+      --min-gas-price=0
+      --sync-mode=FULL
+      --fast-sync-min-peers=1
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+    networks:
+      besu-net:
+        ipv4_address: 172.18.0.2
+
+  node2:
+    image: hyperledger/besu:24.12.0
+    container_name: besu-node2
+    volumes:
+      - ./genesis.json:/config/genesis.json
+      - ./node2/data:/data
+    command: >
+      --data-path=/data
+      --genesis-file=/config/genesis.json
+      --rpc-http-enabled
+      --rpc-http-api=ETH,NET,IBFT,WEB3
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8546
+      --p2p-port=30304
+      --network-id=1337
+      --host-allowlist="*"
+      --rpc-http-cors-origins="*"
+      --min-gas-price=0
+      --sync-mode=FULL
+      --fast-sync-min-peers=1
+      --bootnodes=enode://48256b3d46b34bb611d26e4bf4824c085977b2456619aa2a49bf8f83ea5e0abd218eb151af56509f23f48a1d3490496a5a99b48924f2df423a3c6c34e7a16d37@172.18.0.2:30303
+    ports:
+      - "8546:8546"
+      - "30304:30304"
+    networks:
+      besu-net:
+        ipv4_address: 172.18.0.3
+    depends_on:
+      - node1
+
+  node3:
+    image: hyperledger/besu:24.12.0
+    container_name: besu-node3
+    volumes:
+      - ./genesis.json:/config/genesis.json
+      - ./node3/data:/data
+    command: >
+      --data-path=/data
+      --genesis-file=/config/genesis.json
+      --rpc-http-enabled
+      --rpc-http-api=ETH,NET,IBFT,WEB3
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8547
+      --p2p-port=30305
+      --network-id=1337
+      --host-allowlist="*"
+      --rpc-http-cors-origins="*"
+      --min-gas-price=0
+      --sync-mode=FULL
+      --fast-sync-min-peers=1
+      --bootnodes=enode://48256b3d46b34bb611d26e4bf4824c085977b2456619aa2a49bf8f83ea5e0abd218eb151af56509f23f48a1d3490496a5a99b48924f2df423a3c6c34e7a16d37@172.18.0.2:30303
+    ports:
+      - "8547:8547"
+      - "30305:30305"
+    networks:
+      besu-net:
+        ipv4_address: 172.18.0.4
+    depends_on:
+      - node1
+
+  node4:
+    image: hyperledger/besu:24.12.0
+    container_name: besu-node4
+    volumes:
+      - ./genesis.json:/config/genesis.json
+      - ./node4/data:/data
+    command: >
+      --data-path=/data
+      --genesis-file=/config/genesis.json
+      --rpc-http-enabled
+      --rpc-http-api=ETH,NET,IBFT,WEB3
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8548
+      --p2p-port=30306
+      --network-id=1337
+      --host-allowlist="*"
+      --rpc-http-cors-origins="*"
+      --min-gas-price=0
+      --sync-mode=FULL
+      --fast-sync-min-peers=1
+      --bootnodes=enode://48256b3d46b34bb611d26e4bf4824c085977b2456619aa2a49bf8f83ea5e0abd218eb151af56509f23f48a1d3490496a5a99b48924f2df423a3c6c34e7a16d37@172.18.0.2:30303
+    ports:
+      - "8548:8548"
+      - "30306:30306"
+    networks:
+      besu-net:
+        ipv4_address: 172.18.0.5
+    depends_on:
+      - node1
+
+networks:
+  besu-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/24
