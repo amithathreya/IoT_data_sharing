@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: pqc-rabbitmq
+    ports:
+      - "5672:5672"   
+      - "5671:5671"   
+      - "15672:15672" 
+    environment:
+      RABBITMQ_DEFAULT_USER: pqc_user
+      RABBITMQ_DEFAULT_PASS: pqc_password
+    volumes:
+      # Map the certificates folder
+      - ./certs:/etc/rabbitmq/certs:ro
+      # Map the new configuration file we just created
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pqc-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
