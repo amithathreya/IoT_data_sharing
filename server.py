@@ -17,7 +17,7 @@ AMQP_PASSWORD = "pqc_password"
 EXCHANGE_NAME = "sensors"
 
 GRAFANA_URL   = "http://127.0.0.1:3000/api/live/push/pqc_consumer"
-GRAFANA_TOKEN = "TOKEN"
+# GRAFANA_TOKEN = "TOKEN"
 
 # Resolve certs relative to this script so the consumer works from any checkout path.
 CERT_DIR      = Path(__file__).resolve().parent / "certs"
