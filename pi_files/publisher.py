@@ -7,7 +7,7 @@ import pika
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # ── Configuration (Raspberry Pi) ─────────────────────────────
-BROKER_HOST   = "192.168.29.73"  # <-- UPDATE THIS TO YOUR WINDOWS IPv4 ADDRESS
+BROKER_HOST   = "127.0.0.1"  # Updated for local testing (change to your Windows IP if running on Pi)
 BROKER_PORT   = 5671
 AMQP_USER     = "pqc_user"
 AMQP_PASSWORD = "pqc_password"

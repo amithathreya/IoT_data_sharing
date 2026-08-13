@@ -3,11 +3,18 @@ import json
 import time
 import requests
 import os
+import hashlib
+from web3 import Web3
+from web3.exceptions import Web3Exception
+from dotenv import load_dotenv
 from pathlib import Path
 import oqs
 import pika
+import sys
 from datetime import datetime
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+load_dotenv()
 
 # ── Configuration (Windows Native) ─────────────────────────────
 BROKER_HOST   = "127.0.0.1"
@@ -17,7 +24,65 @@ AMQP_PASSWORD = "pqc_password"
 EXCHANGE_NAME = "sensors"
 
 GRAFANA_URL   = "http://127.0.0.1:3000/api/live/push/pqc_consumer"
-# GRAFANA_TOKEN = "TOKEN"
+GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
+
+# ── Blockchain Configuration ───────────────────────────────────
+BESU_RPC_URL = "http://127.0.0.1:8545"
+w3 = Web3(Web3.HTTPProvider(BESU_RPC_URL))
+
+# Ensure these environment variables are set with your deployed contract info
+CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0x0000000000000000000000000000000000000000")
+BESU_PRIVATE_KEY = os.getenv("BESU_PRIVATE_KEY", "0x0000000000000000000000000000000000000000000000000000000000000000")
+
+try:
+    BESU_ACCOUNT = w3.eth.account.from_key(BESU_PRIVATE_KEY)
+except Exception:
+    BESU_ACCOUNT = None
+
+# Load the full ABI from contract_abi.json
+try:
+    with open("contract_abi.json", "r") as f:
+        CONTRACT_ABI = json.load(f)
+except Exception:
+    print("[Blockchain] Missing contract_abi.json")
+    CONTRACT_ABI = []
+
+if w3.is_connected() and BESU_ACCOUNT:
+    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+else:
+    contract = None
+
+def log_to_blockchain(node_id, ts_ns, payload_hash_bytes):
+    """Logs the telemetry hash to the Besu blockchain."""
+    if not w3.is_connected() or not contract or not BESU_ACCOUNT:
+        print("[Blockchain] Skipped logging: Node disconnected or not configured.")
+        return
+
+    try:
+        # Build the transaction
+        tx = contract.functions.recordTelemetry(
+            str(node_id),
+            int(ts_ns),
+            payload_hash_bytes
+        ).build_transaction({
+            'chainId': w3.eth.chain_id,
+            'from': BESU_ACCOUNT.address,
+            'nonce': w3.eth.get_transaction_count(BESU_ACCOUNT.address, 'pending'),
+            'gas': 3000000,
+            'gasPrice': w3.eth.gas_price
+        })
+
+        # Sign the transaction
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=BESU_PRIVATE_KEY)
+
+        # Send the transaction
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        tx_hex = w3.to_hex(tx_hash)
+        # Suppressed console log for clean output
+        return tx_hex
+    except Exception as e:
+        print(f"[Blockchain] Failed to log telemetry: {e}")
+        return None
 
 # Resolve certs relative to this script so the consumer works from any checkout path.
 CERT_DIR      = Path(__file__).resolve().parent / "certs"
@@ -59,10 +124,30 @@ def push_to_grafana_live(node_id, temperature, humidity, ts_ns):
     
     try:
         res = requests.post(GRAFANA_URL, headers=headers, data=data, timeout=1)
-        if res.status_code != 200:
-            print(f"[Grafana] Push warning ({res.status_code}): {res.text}")
-    except Exception as e:
-        print(f"[Grafana] Failed to push data: {e}")
+        return "OK" if res.status_code == 200 else str(res.status_code)
+    except Exception:
+        return "ERR"
+
+
+def push_blockchain_to_grafana(node_id, tx_hash, payload_hash, ts_ns):
+    """Pushes blockchain transaction info to Grafana Live for the Table panel."""
+    headers = {
+        "Authorization": f"Bearer {GRAFANA_TOKEN}",
+        "Content-Type": "text/plain"
+    }
+    
+    # Influx Line Protocol Format:
+    # blockchain_ledger,node=amith tx_hash="0x...",payload_hash="0x..." timestamp_ns
+    data = (
+        f'blockchain_ledger,node={node_id} '
+        f'tx_hash="{tx_hash}",payload_hash="{payload_hash}" {ts_ns}'
+    )
+    
+    try:
+        res = requests.post(GRAFANA_URL, headers=headers, data=data, timeout=1)
+        return "OK" if res.status_code == 200 else str(res.status_code)
+    except Exception:
+        return "ERR"
 
 
 # ── AMQP Message Handler ───────────────────────────────────────
@@ -75,11 +160,7 @@ def on_message(ch, method, properties, body):
     signature    = bytes.fromhex(envelope["signature"])
     pub_sig_key  = bytes.fromhex(envelope["pub_sig_key"])
 
-    # 0. VISUAL PROOF FOR EVALUATORS
-    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔒 INCOMING SECURE ENVELOPE")
-    print(f" ├─ ML-KEM-768 Ciphertext : {len(kem_cipher)} bytes")
-    print(f" ├─ ML-DSA-65 Signature   : {len(signature)} bytes")
-    print(f" └─ AES-GCM Payload       : {len(enc_payload)} bytes")
+    # Processing Incoming Secure Envelope silently
 
     # 1. Verify ML-DSA-65 Signature
     auth_data = kem_cipher + nonce + enc_payload
@@ -113,11 +194,25 @@ def on_message(ch, method, properties, body):
     hum = data.get('humidity', 'N/A')
     ts_ns = data.get('timestamp_ns', time.time_ns())
 
-    print(f" ✅ Decrypted Telemetry   : Node={node_id} | Temp={temp}°C | Humidity={hum}%\n")
+    # Hash the payload
+    payload_str = json.dumps(data, sort_keys=True).encode('utf-8')
+    payload_hash = hashlib.sha256(payload_str).digest()
 
+    # Log hash to blockchain
+    tx_hash = log_to_blockchain(node_id, ts_ns, payload_hash)
+
+    grafana_status = "Skip"
     # Push to Grafana Live with explicit timestamp
     if temp != 'N/A' and hum != 'N/A':
-        push_to_grafana_live(str(node_id), float(temp), float(hum), ts_ns)
+        grafana_status = push_to_grafana_live(str(node_id), float(temp), float(hum), ts_ns)
+    
+    if tx_hash:
+        push_blockchain_to_grafana(str(node_id), tx_hash, payload_hash.hex(), ts_ns)
+
+    # In-place console log using \r
+    short_tx = f"{tx_hash[:6]}..{tx_hash[-4:]}" if tx_hash else "None"
+    sys.stdout.write(f"\r[{datetime.now().strftime('%H:%M:%S')}] ✅ Node: {node_id} | {temp}°C | {hum}% | Tx: {short_tx} | Grafana: {grafana_status} {' '*5}")
+    sys.stdout.flush()
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
