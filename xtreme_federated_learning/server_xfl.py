@@ -142,11 +142,11 @@ class FederatedServer:
     def aggregate_and_broadcast(self):
         print(f"\n[FL Server] Aggregating weights for Round {self.round_number}...")
         
-        # Simple FedAvg: mean of all weights
+        # Robust Aggregation (Coordinate-wise Median) to mitigate poisoned tensors
         aggregated_weights = []
         for weights_list_tuple in zip(*self.client_weights):
-            layer_mean = np.mean(np.array(weights_list_tuple), axis=0)
-            aggregated_weights.append(layer_mean)
+            layer_median = np.median(np.array(weights_list_tuple), axis=0)
+            aggregated_weights.append(layer_median)
             
         self.client_weights = [] # Reset for next round
         self.round_number += 1

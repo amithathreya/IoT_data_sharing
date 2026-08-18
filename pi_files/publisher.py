@@ -12,12 +12,12 @@ import numpy as np
 def get_anomaly_model(input_shape=(20,)):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Reshape((1, input_shape[0]), input_shape=input_shape),
-        tf.keras.layers.SimpleRNN(256, return_sequences=True, name="rnn_1"),
-        tf.keras.layers.SimpleRNN(128, return_sequences=True, name="rnn_2"),
-        tf.keras.layers.SimpleRNN(64, name="rnn_3"),
-        tf.keras.layers.Dense(9, activation="softmax", name="output")
+        tf.keras.layers.SimpleRNN(128, return_sequences=True, name="rnn_1"),
+        tf.keras.layers.SimpleRNN(64, name="rnn_2"),
+        tf.keras.layers.Dense(128, activation="relu", name="dense_1"),
+        tf.keras.layers.Dense(input_shape[0], name="output")
     ])
-    model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer="adam", loss="mse")
     return model
 
 print("[Publisher] Initializing Local Anomaly Detection Model...")
@@ -34,6 +34,19 @@ if os.path.exists(weights_path):
         print(f"[Publisher] ⚠️ Failed to load initial weights: {e}")
 else:
     print("[Publisher] No pre-trained weights found. Using random initialization.")
+
+threshold_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_model_threshold.json")
+dynamic_threshold = 1.0
+if os.path.exists(threshold_path):
+    try:
+        with open(threshold_path, "r") as f:
+            data = json.load(f)
+            dynamic_threshold = data.get("dynamic_threshold", 1.0)
+            print(f"[Publisher] 📊 Successfully loaded initial threshold: {dynamic_threshold:.5f}")
+    except Exception as e:
+        print(f"[Publisher] ⚠️ Could not parse threshold file on startup: {e}")
+else:
+    print(f"[Publisher] ⚠️ No threshold file found at {threshold_path}. Defaulting to 1.0")
 
 local_buffer = []  # Store last 10 (temp, hum) pairs
 # ───────────────────────────────────────────────────────────────
@@ -92,6 +105,7 @@ def main():
     print("[Publisher] Publishing ML-KEM encrypted & ML-DSA signed packets...\n")
     global last_mtime
     global local_buffer
+    global dynamic_threshold
     try:
         while True:
             # ── Check for updated federated weights ──
@@ -99,11 +113,19 @@ def main():
                 current_mtime = os.path.getmtime(weights_path)
                 if current_mtime > last_mtime:
                     print(f"\n[Publisher] 🔄 Detected updated federated weights! Reloading model...")
+                    # Update mtime immediately so we don't spam warnings if this specific file is permanently corrupted/incompatible
+                    last_mtime = current_mtime 
                     try:
                         anomaly_model.load_weights(weights_path)
-                        last_mtime = current_mtime
+                        
+                        # Reload threshold if weights updated
+                        if os.path.exists(threshold_path):
+                            with open(threshold_path, "r") as f:
+                                t_data = json.load(f)
+                                dynamic_threshold = t_data.get("dynamic_threshold", dynamic_threshold)
+                                print(f"[Publisher] 📊 Dynamic Threshold Hot-Reloaded: {dynamic_threshold:.5f}")
                     except Exception as e:
-                        print(f"[Publisher] ⚠️ Failed to load weights (file might be locked), will retry: {e}")
+                        print(f"[Publisher] ⚠️ Failed to load weights: {e}")
 
             # 1. Telemetry Payload - Reading from DHT11 Kernel Overlay (IIO)
             try:
@@ -122,11 +144,20 @@ def main():
             if len(local_buffer) > 20:
                 local_buffer = local_buffer[-20:]
                 
-            predicted_class = 0
+            anomaly_score = 0.0
+            anomaly_flag = 0
             if len(local_buffer) == 20:
                 input_data = (np.array(local_buffer) / 100.0).reshape(1, 20)
-                prediction = anomaly_model.predict(input_data, verbose=0)
-                predicted_class = int(np.argmax(prediction, axis=1)[0])
+                reconstruction = anomaly_model.predict(input_data, verbose=0)
+                loss_fn = tf.keras.losses.MeanSquaredError()
+                anomaly_score = float(loss_fn(input_data, reconstruction))
+                
+                # Debug print to see exactly what the model is thinking:
+                print(f" [Debug] Score: {anomaly_score:.5f} | Threshold: {dynamic_threshold:.5f}")
+                
+                if anomaly_score >= dynamic_threshold:
+                    anomaly_flag = 1
+                    print(f" [!] ANOMALY FLAGGED: Score {anomaly_score:.5f} >= {dynamic_threshold:.5f}")
             # ────────────────────────────
             
             payload_data = {
@@ -134,7 +165,8 @@ def main():
                 "temperature": temp_val,
                 "humidity": hum_val,
                 "timestamp_ns": time.time_ns(),
-                "anomaly_class": predicted_class
+                "anomaly_flag": anomaly_flag,
+                "anomaly_score": anomaly_score
             }
             payload_bytes = json.dumps(payload_data).encode()
 

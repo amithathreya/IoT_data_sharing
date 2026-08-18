@@ -12,17 +12,18 @@ import psutil
 import pickle
 import base64
 import threading
+import collections
 
 # ── Anomaly Detection Model ────────────────────────────────────
 def get_model(input_shape=(20,)):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Reshape((1, input_shape[0]), input_shape=input_shape),
-        tf.keras.layers.SimpleRNN(256, return_sequences=True, name="rnn_1"),
-        tf.keras.layers.SimpleRNN(128, return_sequences=True, name="rnn_2"),
-        tf.keras.layers.SimpleRNN(64, name="rnn_3"),
-        tf.keras.layers.Dense(9, activation="softmax", name="output")
+        tf.keras.layers.SimpleRNN(128, return_sequences=True, name="rnn_1"),
+        tf.keras.layers.SimpleRNN(64, name="rnn_2"),
+        tf.keras.layers.Dense(128, activation="relu", name="dense_1"),
+        tf.keras.layers.Dense(input_shape[0], name="output")
     ])
-    model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer="adam", loss="mse", metrics=["mae"])
     return model
 
 def gather_sensor_data(num_samples=8):
@@ -85,7 +86,7 @@ def gather_sensor_data(num_samples=8):
         y_train.append(int(np.random.randint(1, 9)))
         
     x_train_np = np.array(X_train) / 100.0
-    y_train_np = tf.keras.utils.to_categorical(np.array(y_train), num_classes=9)
+    y_train_np = np.array(y_train)
     return x_train_np, y_train_np
 
 # ── AMQP & PQC Config ──────────────────────────────────────────
@@ -125,6 +126,8 @@ class FederatedClient:
     def __init__(self, cid):
         self.cid = cid
         self.model = get_model()
+        self.threshold_history = collections.deque(maxlen=100)
+        self.k = 3.0
         # Data is now gathered dynamically before training
         self.channel = None
         
@@ -167,15 +170,57 @@ class FederatedClient:
 
     def train_and_send(self):
         self.x_train, self.y_train = gather_sensor_data(num_samples=8)
-        print(f"[Client {self.cid}] Starting local training on real data...")
-        self.model.fit(self.x_train, self.y_train, epochs=2, batch_size=8, verbose=1)
+        print(f"[Client {self.cid}] Starting local training on real data with Loss-Gating...")
+        
+        loss_fn = tf.keras.losses.MeanSquaredError()
+        
+        for idx in range(len(self.x_train)):
+            x_batch = self.x_train[idx:idx+1]
+            
+            # 1. Forward pass in eval mode to get reconstruction error
+            reconstruction = self.model(x_batch, training=False)
+            anomaly_score = float(loss_fn(x_batch, reconstruction))
+            
+            # Calculate dynamic threshold
+            if len(self.threshold_history) > 10:
+                mu_loss = np.mean(self.threshold_history)
+                sigma_loss = np.std(self.threshold_history)
+                dynamic_threshold = mu_loss + (self.k * sigma_loss)
+            else:
+                dynamic_threshold = 1.0 # default high threshold during warmup
+                
+            # 2. Loss-Gating
+            is_anomaly = anomaly_score >= dynamic_threshold
+            
+            if is_anomaly:
+                print(f" [!] Sample {idx} - ANOMALY DETECTED (Score: {anomaly_score:.4f} >= Threshold: {dynamic_threshold:.4f}). Freezing backprop.")
+            else:
+                self.threshold_history.append(anomaly_score)
+                # Switch to train mode and backpropagate
+                with tf.GradientTape() as tape:
+                    reconstruction_train = self.model(x_batch, training=True)
+                    loss_value = loss_fn(x_batch, reconstruction_train)
+                
+                grads = tape.gradient(loss_value, self.model.trainable_weights)
+                self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
         
         weights_out = os.path.join(BASE_DIR, "local_model.weights.h5")
+        threshold_out = os.path.join(BASE_DIR, "local_model_threshold.json")
         try:
             self.model.save_weights(weights_out)
-            print(f"[Client {self.cid}] Saved updated weights to {weights_out} for publisher.")
+            
+            current_threshold = 1.0
+            if len(self.threshold_history) > 10:
+                mu_loss = np.mean(self.threshold_history)
+                sigma_loss = np.std(self.threshold_history)
+                current_threshold = float(mu_loss + (self.k * sigma_loss))
+                
+            with open(threshold_out, "w") as f:
+                json.dump({"dynamic_threshold": current_threshold}, f)
+                
+            print(f"[Client {self.cid}] Saved updated weights & threshold ({current_threshold:.5f}) to {weights_out} for publisher.")
         except Exception as e:
-            print(f"[Client] Could not save weights: {e}")
+            print(f"[Client] Could not save weights or threshold: {e}")
 
         weights_data = serialize_weights(self.model.get_weights())
         payload = json.dumps({"cid": self.cid, "weights": weights_data}).encode()
@@ -242,9 +287,8 @@ class FederatedClient:
         global_weights = deserialize_weights(data["weights"])
         self.model.set_weights(global_weights)
         
-        weights_out = os.path.join(os.path.dirname(BASE_DIR), "pi_files", "local_model_weights.h5")
-        if os.path.exists(os.path.dirname(weights_out)):
-            self.model.save_weights(weights_out)
+        weights_out = os.path.join(BASE_DIR, "local_model.weights.h5")
+        self.model.save_weights(weights_out)
         
         ch.basic_ack(delivery_tag=method.delivery_tag)
         

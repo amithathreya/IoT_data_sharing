@@ -8,7 +8,7 @@ def weighted_average(metrics: List[Tuple[int, Dict[str, Scalar]]]) -> Dict[str, 
 
     return {"accuracy": sum(accuracies) / sum(examples)}
 def main():
-    strategy = fl.server.strategy.FedAvg(
+    strategy = fl.server.strategy.FedMedian(
         fraction_fit=1,  
         fraction_evaluate=1, 
         min_fit_clients=8, 
