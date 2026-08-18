@@ -214,6 +214,12 @@ def on_message(ch, method, properties, body):
     sys.stdout.write(f"\r[{datetime.now().strftime('%H:%M:%S')}] ✅ Node: {node_id} | {temp}°C | {hum}% | Tx: {short_tx} | Grafana: {grafana_status} {' '*5}")
     sys.stdout.flush()
 
+    # ── Anomaly Detection Alert ──────────────────────────────────
+    anomaly_class = data.get('anomaly_class', 0)
+    if anomaly_class > 0:
+        print(f"\n🚨 [ANOMALY DETECTED] Node {node_id} exhibited anomalous behavior! (Class: {anomaly_class}) 🚨")
+    # ───────────────────────────────────────────────────────────────
+
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 

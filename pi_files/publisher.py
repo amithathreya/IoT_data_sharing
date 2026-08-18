@@ -5,6 +5,38 @@ import os
 import oqs
 import pika
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import tensorflow as tf
+import numpy as np
+
+# ── Anomaly Detection Model (Edge Inference) ───────────────────
+def get_anomaly_model(input_shape=(20,)):
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Reshape((1, input_shape[0]), input_shape=input_shape),
+        tf.keras.layers.SimpleRNN(256, return_sequences=True, name="rnn_1"),
+        tf.keras.layers.SimpleRNN(128, return_sequences=True, name="rnn_2"),
+        tf.keras.layers.SimpleRNN(64, name="rnn_3"),
+        tf.keras.layers.Dense(9, activation="softmax", name="output")
+    ])
+    model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+    return model
+
+print("[Publisher] Initializing Local Anomaly Detection Model...")
+anomaly_model = get_anomaly_model()
+# Try loading federated weights if available
+weights_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_model.weights.h5")
+last_mtime = 0
+if os.path.exists(weights_path):
+    print(f"[Publisher] Loading trained weights from {weights_path}")
+    try:
+        anomaly_model.load_weights(weights_path)
+        last_mtime = os.path.getmtime(weights_path)
+    except Exception as e:
+        print(f"[Publisher] ⚠️ Failed to load initial weights: {e}")
+else:
+    print("[Publisher] No pre-trained weights found. Using random initialization.")
+
+local_buffer = []  # Store last 10 (temp, hum) pairs
+# ───────────────────────────────────────────────────────────────
 
 # ── Configuration (Raspberry Pi) ─────────────────────────────
 BROKER_HOST   = "127.0.0.1"  # Updated for local testing (change to your Windows IP if running on Pi)
@@ -58,15 +90,51 @@ def main():
     channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type="fanout", durable=True)
 
     print("[Publisher] Publishing ML-KEM encrypted & ML-DSA signed packets...\n")
+    global last_mtime
+    global local_buffer
     try:
         while True:
-            # 1. Telemetry Payload
-            # Replace these mocked values with real DHT11/DHT22 sensor reads if you have them wired!
+            # ── Check for updated federated weights ──
+            if os.path.exists(weights_path):
+                current_mtime = os.path.getmtime(weights_path)
+                if current_mtime > last_mtime:
+                    print(f"\n[Publisher] 🔄 Detected updated federated weights! Reloading model...")
+                    try:
+                        anomaly_model.load_weights(weights_path)
+                        last_mtime = current_mtime
+                    except Exception as e:
+                        print(f"[Publisher] ⚠️ Failed to load weights (file might be locked), will retry: {e}")
+
+            # 1. Telemetry Payload - Reading from DHT11 Kernel Overlay (IIO)
+            try:
+                with open("/sys/bus/iio/devices/iio:device0/in_temp_input", "r") as f:
+                    temp_val = float(f.read().strip()) / 1000.0
+                with open("/sys/bus/iio/devices/iio:device0/in_humidityrelative_input", "r") as f:
+                    hum_val = float(f.read().strip()) / 1000.0
+            except Exception as e:
+                # Fallback to mock values if the IIO files aren't ready or overlay isn't loaded
+                print(f"[Sensor Error] Failed to read from sysfs: {e}")
+                temp_val = 27.5
+                hum_val = 76.0
+            
+            # ── Edge Anomaly Inference ──
+            local_buffer.extend([temp_val, hum_val])
+            if len(local_buffer) > 20:
+                local_buffer = local_buffer[-20:]
+                
+            predicted_class = 0
+            if len(local_buffer) == 20:
+                input_data = (np.array(local_buffer) / 100.0).reshape(1, 20)
+                prediction = anomaly_model.predict(input_data, verbose=0)
+                predicted_class = int(np.argmax(prediction, axis=1)[0])
+            # ────────────────────────────
+            
             payload_data = {
-                "node_id":NODE_ID,
-                "temperature": 27.5,
-                "humidity": 76.0,
-                "timestamp_ns": time.time_ns()
+                "node_id": NODE_ID,
+                "temperature": temp_val,
+                "humidity": hum_val,
+                "timestamp_ns": time.time_ns(),
+                "anomaly_class": predicted_class
             }
             payload_bytes = json.dumps(payload_data).encode()
 
