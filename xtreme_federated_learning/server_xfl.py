@@ -4,10 +4,20 @@ import time
 import os
 import pika
 import oqs
+import requests
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import numpy as np
 import pickle
 import base64
+
+DASHBOARD_URL = "http://localhost:4000/api/xfl"
+
+def push_xfl_round(payload):
+    """Pushes XFL round metrics to the unified React dashboard."""
+    try:
+        requests.post(DASHBOARD_URL, json=payload, timeout=2)
+    except Exception:
+        pass  # Dashboard being down should never interrupt FL
 
 # ── AMQP & PQC Config ──────────────────────────────────────────
 BROKER_HOST   = "127.0.0.1"
@@ -47,6 +57,7 @@ class FederatedServer:
     def __init__(self):
         self.channel = None
         self.client_weights = []
+        self.client_stats = []  # Track per-client training stats
         self.round_number = 1
         
         # Server ML-DSA-65 Signer
@@ -132,7 +143,16 @@ class FederatedServer:
         weights = deserialize_weights(data["weights"])
         self.client_weights.append(weights)
         
-        print(f"[FL Server] Received weights from Client {cid} for Round {self.round_number} ({len(self.client_weights)}/{MIN_CLIENTS_PER_ROUND})")
+        # Collect training stats from the client payload
+        self.client_stats.append({
+            "cid": cid,
+            "avg_loss": data.get("avg_loss", 0.0),
+            "threshold": data.get("threshold", 0.0),
+            "gated_anomalies": data.get("gated_anomalies", 0),
+            "trained_samples": data.get("trained_samples", 0),
+        })
+        
+        print(f"[FL Server] Received weights from Client {cid} for Round {self.round_number} ({len(self.client_weights)}/{MIN_CLIENTS_PER_ROUND}) | Loss: {data.get('avg_loss', 'N/A'):.5f} | Gated: {data.get('gated_anomalies', '?')}")
         
         if len(self.client_weights) >= MIN_CLIENTS_PER_ROUND:
             self.aggregate_and_broadcast()
@@ -147,8 +167,30 @@ class FederatedServer:
         for weights_list_tuple in zip(*self.client_weights):
             layer_median = np.median(np.array(weights_list_tuple), axis=0)
             aggregated_weights.append(layer_median)
-            
-        self.client_weights = [] # Reset for next round
+
+        # ── Compute meaningful anomaly detection stats for dashboard ─
+        avg_loss_global = float(np.mean([s["avg_loss"] for s in self.client_stats])) if self.client_stats else 0.0
+        avg_threshold   = float(np.mean([s["threshold"] for s in self.client_stats])) if self.client_stats else 0.0
+        total_gated     = int(sum(s["gated_anomalies"] for s in self.client_stats))
+        total_trained   = int(sum(s["trained_samples"] for s in self.client_stats))
+        num_clients     = len(self.client_stats)
+        gating_rate     = round(total_gated / max(total_gated + total_trained, 1) * 100, 1)
+
+        xfl_payload = {
+            "round": self.round_number,
+            "num_clients": num_clients,
+            "avg_reconstruction_loss": avg_loss_global,
+            "avg_dynamic_threshold": avg_threshold,
+            "total_gated_anomalies": total_gated,
+            "total_trained_samples": total_trained,
+            "gating_rate_pct": gating_rate,
+            "timestamp": time.time()
+        }
+        push_xfl_round(xfl_payload)
+        # ─────────────────────────────────────────────────────────────
+
+        self.client_weights = []  # Reset for next round
+        self.client_stats = []    # Reset stats for next round
         self.round_number += 1
         
         weights_data = serialize_weights(aggregated_weights)

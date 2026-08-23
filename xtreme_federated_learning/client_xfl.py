@@ -26,24 +26,29 @@ def get_model(input_shape=(20,)):
     model.compile(optimizer="adam", loss="mse", metrics=["mae"])
     return model
 
-def gather_sensor_data(num_samples=8):
-    print(f"[Client] Gathering {num_samples} real sensor samples for training. This will take ~{num_samples * 2.5} seconds...")
+def gather_network_data(num_samples=8):
+    print(f"[Client] Gathering {num_samples} real network samples for training. This will take ~{num_samples * 2.5} seconds...")
     X_train = []
     y_train = []
     
     local_buffer = []
+    prev_io = psutil.net_io_counters()
+    
     while len(X_train) < num_samples:
-        try:
-            with open("/sys/bus/iio/devices/iio:device0/in_temp_input", "r") as f:
-                temp_val = float(f.read().strip()) / 1000.0
-            with open("/sys/bus/iio/devices/iio:device0/in_humidityrelative_input", "r") as f:
-                hum_val = float(f.read().strip()) / 1000.0
-        except Exception as e:
-            # Fallback to mock values if IIO files aren't ready
-            temp_val = 27.5
-            hum_val = 76.0
+        time.sleep(2.5)
+        curr_io = psutil.net_io_counters()
+        
+        # Calculate rates (bytes per 2.5 seconds)
+        bytes_sent = curr_io.bytes_sent - prev_io.bytes_sent
+        bytes_recv = curr_io.bytes_recv - prev_io.bytes_recv
+        prev_io = curr_io
+        
+        # Log scaling to handle large variations gracefully (log(1 + x))
+        # Log10(1MB) ~ 6. Let's normalize by dividing by 10 to keep it ~ [0, 1] range ideally.
+        scaled_sent = np.log1p(bytes_sent) / 10.0
+        scaled_recv = np.log1p(bytes_recv) / 10.0
             
-        local_buffer.extend([temp_val, hum_val])
+        local_buffer.extend([scaled_sent, scaled_recv])
         if len(local_buffer) > 20:
             local_buffer = local_buffer[-20:]
             
@@ -51,41 +56,39 @@ def gather_sensor_data(num_samples=8):
             X_train.append(list(local_buffer))
             y_train.append(0) # Class 0 = Normal
             
-        time.sleep(2.5)
-        
-    # --- Inject Synthetic Anomalies ---
+    # --- Inject Synthetic Anomalies (Network Spikes) ---
     # To teach the Neural Network what an anomaly looks like, we generate fake "bad" data
     num_anomalies = num_samples // 2
     for _ in range(num_anomalies):
         anomaly_sequence = []
-        # Generate a Normal baseline first (e.g. ~29C, ~60% hum)
-        normal_temp = 29.0 + float(np.random.uniform(-1, 1))
-        normal_hum = 60.0 + float(np.random.uniform(-2, 2))
+        # Generate a Normal baseline first (e.g. log1p of normal traffic ~ 4.0 to 6.0)
+        normal_sent = float(np.random.uniform(4.0, 6.0)) / 10.0
+        normal_recv = float(np.random.uniform(4.0, 6.0)) / 10.0
         
         # Decide how many readings at the end will be a sudden spike (1 to 10 readings)
         spike_length = np.random.randint(1, 11)
         
-        # Determine the extreme values for the spike
-        spike_temp = float(np.random.choice([np.random.randint(-10, 15), np.random.randint(35, 80)]))
-        spike_hum = float(np.random.choice([np.random.randint(0, 40), np.random.randint(75, 100)]))
+        # Determine the extreme values for the spike (e.g. DDoS traffic, log1p ~ 8.0 to 12.0)
+        spike_sent = float(np.random.uniform(8.0, 12.0)) / 10.0
+        spike_recv = float(np.random.uniform(8.0, 12.0)) / 10.0
         
         for i in range(10):
             if i >= (10 - spike_length):
                 # We hit the spike!
-                rand_temp = spike_temp + float(np.random.uniform(-1, 1))
-                rand_hum = spike_hum + float(np.random.uniform(-2, 2))
+                rand_sent = spike_sent + float(np.random.uniform(-0.5, 0.5)) / 10.0
+                rand_recv = spike_recv + float(np.random.uniform(-0.5, 0.5)) / 10.0
             else:
                 # Still in the normal part of the sequence
-                rand_temp = normal_temp + float(np.random.uniform(-0.5, 0.5))
-                rand_hum = normal_hum + float(np.random.uniform(-1, 1))
+                rand_sent = normal_sent + float(np.random.uniform(-0.2, 0.2)) / 10.0
+                rand_recv = normal_recv + float(np.random.uniform(-0.2, 0.2)) / 10.0
                 
-            anomaly_sequence.extend([rand_temp, rand_hum])
+            anomaly_sequence.extend([rand_sent, rand_recv])
             
         X_train.append(anomaly_sequence)
         # Randomly assign it to an Anomaly Class (1 through 8)
         y_train.append(int(np.random.randint(1, 9)))
         
-    x_train_np = np.array(X_train) / 100.0
+    x_train_np = np.array(X_train)
     y_train_np = np.array(y_train)
     return x_train_np, y_train_np
 
@@ -169,10 +172,13 @@ class FederatedClient:
         self.channel.start_consuming()
 
     def train_and_send(self):
-        self.x_train, self.y_train = gather_sensor_data(num_samples=8)
+        self.x_train, self.y_train = gather_network_data(num_samples=8)
         print(f"[Client {self.cid}] Starting local training on real data with Loss-Gating...")
         
         loss_fn = tf.keras.losses.MeanSquaredError()
+        total_loss = 0.0
+        trained_samples = 0
+        gated_anomalies = 0
         
         for idx in range(len(self.x_train)):
             x_batch = self.x_train[idx:idx+1]
@@ -187,15 +193,18 @@ class FederatedClient:
                 sigma_loss = np.std(self.threshold_history)
                 dynamic_threshold = mu_loss + (self.k * sigma_loss)
             else:
-                dynamic_threshold = 1.0 # default high threshold during warmup
+                dynamic_threshold = 10.0 # default high threshold during warmup
                 
             # 2. Loss-Gating
             is_anomaly = anomaly_score >= dynamic_threshold
             
             if is_anomaly:
+                gated_anomalies += 1
                 print(f" [!] Sample {idx} - ANOMALY DETECTED (Score: {anomaly_score:.4f} >= Threshold: {dynamic_threshold:.4f}). Freezing backprop.")
             else:
                 self.threshold_history.append(anomaly_score)
+                total_loss += anomaly_score
+                trained_samples += 1
                 # Switch to train mode and backpropagate
                 with tf.GradientTape() as tape:
                     reconstruction_train = self.model(x_batch, training=True)
@@ -204,12 +213,14 @@ class FederatedClient:
                 grads = tape.gradient(loss_value, self.model.trainable_weights)
                 self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
         
+        avg_loss = total_loss / trained_samples if trained_samples > 0 else 0.0
+        
         weights_out = os.path.join(BASE_DIR, "local_model.weights.h5")
         threshold_out = os.path.join(BASE_DIR, "local_model_threshold.json")
+        current_threshold = 1.0
         try:
             self.model.save_weights(weights_out)
             
-            current_threshold = 1.0
             if len(self.threshold_history) > 10:
                 mu_loss = np.mean(self.threshold_history)
                 sigma_loss = np.std(self.threshold_history)
@@ -223,7 +234,14 @@ class FederatedClient:
             print(f"[Client] Could not save weights or threshold: {e}")
 
         weights_data = serialize_weights(self.model.get_weights())
-        payload = json.dumps({"cid": self.cid, "weights": weights_data}).encode()
+        payload = json.dumps({
+            "cid": self.cid,
+            "weights": weights_data,
+            "avg_loss": avg_loss,
+            "threshold": current_threshold,
+            "gated_anomalies": gated_anomalies,
+            "trained_samples": trained_samples
+        }).encode()
 
         with oqs.KeyEncapsulation("ML-KEM-768") as kem:
             kem_ciphertext, shared_secret = kem.encap_secret(self.SERVER_KEM_PUB)

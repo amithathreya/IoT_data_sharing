@@ -23,7 +23,7 @@ AMQP_USER     = "pqc_user"
 AMQP_PASSWORD = "pqc_password"
 EXCHANGE_NAME = "sensors"
 
-GRAFANA_URL   = "http://127.0.0.1:3000/api/live/push/pqc_consumer"
+GRAFANA_URL   = "http://localhost:3000/api/live/push/pqc_consume"
 GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 
 # ── Blockchain Configuration ───────────────────────────────────
@@ -106,45 +106,16 @@ else:
     print("[Setup] ML-KEM-768 Private Key saved to certs folder.")
 
 
-# ── Grafana Live Direct Streaming ──────────────────────────────
-def push_to_grafana_live(node_id, temperature, humidity, ts_ns):
-    """Pushes live metrics with PQC security tags to Grafana adhering to Influx Line Protocol."""
-    headers = {
-        "Authorization": f"Bearer {GRAFANA_TOKEN}",
-        "Content-Type": "text/plain"
-    }
-    
-    # Correct Influx Line Protocol Format:
-    # <measurement>,<tags> <fields> <timestamp_ns>
-    # Note: node={node_id} dynamically tags the publisher node
-    data = (
-        f"iot_sensors,node={node_id},kem=ML-KEM-768,sig=ML-DSA-65 "
-        f"temperature={temperature},humidity={humidity},secure_link=1i {ts_ns}"
-    )
-    
-    try:
-        res = requests.post(GRAFANA_URL, headers=headers, data=data, timeout=1)
-        return "OK" if res.status_code == 200 else str(res.status_code)
-    except Exception:
-        return "ERR"
+# ── Dashboard Direct Streaming ──────────────────────────────
+DASHBOARD_URL = "http://localhost:4000/api/data"
 
-
-def push_blockchain_to_grafana(node_id, tx_hash, payload_hash, ts_ns):
-    """Pushes blockchain transaction info to Grafana Live for the Table panel."""
+def push_to_dashboard(payload):
+    """Pushes live metrics, anomalies, and blockchain logs to the unified React dashboard."""
     headers = {
-        "Authorization": f"Bearer {GRAFANA_TOKEN}",
-        "Content-Type": "text/plain"
+        "Content-Type": "application/json"
     }
-    
-    # Influx Line Protocol Format:
-    # blockchain_ledger,node=amith tx_hash="0x...",payload_hash="0x..." timestamp_ns
-    data = (
-        f'blockchain_ledger,node={node_id} '
-        f'tx_hash="{tx_hash}",payload_hash="{payload_hash}" {ts_ns}'
-    )
-    
     try:
-        res = requests.post(GRAFANA_URL, headers=headers, data=data, timeout=1)
+        res = requests.post(DASHBOARD_URL, headers=headers, json=payload, timeout=2)
         return "OK" if res.status_code == 200 else str(res.status_code)
     except Exception:
         return "ERR"
@@ -201,24 +172,30 @@ def on_message(ch, method, properties, body):
     # Log hash to blockchain
     tx_hash = log_to_blockchain(node_id, ts_ns, payload_hash)
 
-    grafana_status = "Skip"
-    # Push to Grafana Live with explicit timestamp
-    if temp != 'N/A' and hum != 'N/A':
-        grafana_status = push_to_grafana_live(str(node_id), float(temp), float(hum), ts_ns)
-    
-    if tx_hash:
-        push_blockchain_to_grafana(str(node_id), tx_hash, payload_hash.hex(), ts_ns)
-
-    # In-place console log using \r
-    short_tx = f"{tx_hash[:6]}..{tx_hash[-4:]}" if tx_hash else "None"
-    sys.stdout.write(f"\r[{datetime.now().strftime('%H:%M:%S')}] ✅ Node: {node_id} | {temp}°C | {hum}% | Tx: {short_tx} | Grafana: {grafana_status} {' '*5}")
-    sys.stdout.flush()
-
     # ── Anomaly Detection Alert ──────────────────────────────────
     anomaly_class = data.get('anomaly_class', 0)
     if anomaly_class > 0:
         print(f"\n🚨 [ANOMALY DETECTED] Node {node_id} exhibited anomalous behavior! (Class: {anomaly_class}) 🚨")
     # ───────────────────────────────────────────────────────────────
+
+    dashboard_status = "Skip"
+    # Push everything to the React dashboard backend
+    dashboard_payload = {
+        "node_id": str(node_id),
+        "temperature": temp if temp == 'N/A' else float(temp),
+        "humidity": hum if hum == 'N/A' else float(hum),
+        "anomaly_class": anomaly_class,
+        "ts_ns": ts_ns,
+        "payload_hash": payload_hash.hex(),
+        "tx_hash": tx_hash if tx_hash else "[Besu Not Connected / Tx Failed]"
+    }
+        
+    dashboard_status = push_to_dashboard(dashboard_payload)
+
+    # In-place console log using \r
+    short_tx = f"{tx_hash[:6]}..{tx_hash[-4:]}" if tx_hash else "None"
+    sys.stdout.write(f"\r[{datetime.now().strftime('%H:%M:%S')}] ✅ Node: {node_id} | {temp}°C | {hum}% | Tx: {short_tx} | Dashboard: {dashboard_status} {' '*5}")
+    sys.stdout.flush()
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
