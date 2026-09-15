@@ -91,13 +91,19 @@ class FederatedServer:
         params = pika.ConnectionParameters(
             host=BROKER_HOST, port=BROKER_PORT, virtual_host="/",
             credentials=pika.PlainCredentials(AMQP_USER, AMQP_PASSWORD),
-            ssl_options=pika.SSLOptions(tls_ctx, BROKER_HOST)
+            ssl_options=pika.SSLOptions(tls_ctx, BROKER_HOST),
+            heartbeat=120,
+            blocked_connection_timeout=300,
+            connection_attempts=5,
+            retry_delay=5,
+            socket_timeout=10,
         )
         conn = pika.BlockingConnection(params)
         self.channel = conn.channel()
         
         self.channel.exchange_declare(exchange=EXCHANGE_UPDATES, exchange_type="fanout", durable=True)
         self.channel.exchange_declare(exchange=EXCHANGE_GLOBAL, exchange_type="fanout", durable=True)
+        self.channel.basic_qos(prefetch_count=1)
         
         result = self.channel.queue_declare(queue="", exclusive=True)
         self.channel.queue_bind(exchange=EXCHANGE_UPDATES, queue=result.method.queue)

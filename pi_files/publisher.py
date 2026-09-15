@@ -7,14 +7,25 @@ import pika
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import tensorflow as tf
 import numpy as np
+import psutil
+
+# Setup GPIO
+try:
+    from gpiozero import DigitalInputDevice
+    # IR on GPIO 23, PIR on GPIO 24
+    ir_sensor = DigitalInputDevice(23)
+    pir_sensor = DigitalInputDevice(24)
+    GPIO_AVAILABLE = True
+except ImportError:
+    print("[Publisher] gpiozero not found. Using mock values for IR and PIR.")
+    GPIO_AVAILABLE = False
 
 # ── Anomaly Detection Model (Edge Inference) ───────────────────
 def get_anomaly_model(input_shape=(20,)):
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Reshape((1, input_shape[0]), input_shape=input_shape),
-        tf.keras.layers.SimpleRNN(128, return_sequences=True, name="rnn_1"),
-        tf.keras.layers.SimpleRNN(64, name="rnn_2"),
-        tf.keras.layers.Dense(128, activation="relu", name="dense_1"),
+        tf.keras.layers.Dense(16, activation="relu", input_shape=input_shape, name="enc_1"),
+        tf.keras.layers.Dense(8, activation="relu", name="enc_2"),
+        tf.keras.layers.Dense(16, activation="relu", name="dec_1"),
         tf.keras.layers.Dense(input_shape[0], name="output")
     ])
     model.compile(optimizer="adam", loss="mse")
@@ -23,7 +34,13 @@ def get_anomaly_model(input_shape=(20,)):
 print("[Publisher] Initializing Local Anomaly Detection Model...")
 anomaly_model = get_anomaly_model()
 # Try loading federated weights if available
-weights_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_model.weights.h5")
+if os.name == 'posix' and os.path.exists('/dev/shm'):
+    weights_path = "/dev/shm/local_model.weights.h5"
+    threshold_path = "/dev/shm/local_model_threshold.json"
+else:
+    weights_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_model.weights.h5")
+    threshold_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_model_threshold.json")
+
 last_mtime = 0
 if os.path.exists(weights_path):
     print(f"[Publisher] Loading trained weights from {weights_path}")
@@ -35,7 +52,6 @@ if os.path.exists(weights_path):
 else:
     print("[Publisher] No pre-trained weights found. Using random initialization.")
 
-threshold_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_model_threshold.json")
 dynamic_threshold = 1.0
 if os.path.exists(threshold_path):
     try:
@@ -48,7 +64,11 @@ if os.path.exists(threshold_path):
 else:
     print(f"[Publisher] ⚠️ No threshold file found at {threshold_path}. Defaulting to 1.0")
 
-local_buffer = []  # Store last 10 (temp, hum) pairs
+# ── Network I/O Buffer for Edge Anomaly Detection ─────────────
+# Buffer stores the last 20 scaled network readings (10 pairs of sent/recv).
+# This MUST match the training data format in client_xfl.py: log1p(bytes) / 10.0
+local_buffer = []
+prev_io = psutil.net_io_counters()
 # ───────────────────────────────────────────────────────────────
 
 # ── Configuration (Raspberry Pi) ─────────────────────────────
@@ -106,6 +126,7 @@ def main():
     global last_mtime
     global local_buffer
     global dynamic_threshold
+    global prev_io
     try:
         while True:
             # ── Check for updated federated weights ──
@@ -139,35 +160,71 @@ def main():
                 temp_val = 27.5
                 hum_val = 76.0
             
-            # ── Edge Anomaly Inference ──
-            local_buffer.extend([temp_val, hum_val])
+            # ── Edge Anomaly Inference (Network I/O) ────────────
+            # Measure network traffic since the last iteration using the same
+            # log-scaling formula as client_xfl.py to ensure model compatibility.
+            curr_io = psutil.net_io_counters()
+            bytes_sent = curr_io.bytes_sent - prev_io.bytes_sent
+            bytes_recv = curr_io.bytes_recv - prev_io.bytes_recv
+            prev_io = curr_io
+            scaled_sent = np.log1p(bytes_sent) / 10.0
+            scaled_recv = np.log1p(bytes_recv) / 10.0
+
+            local_buffer.extend([scaled_sent, scaled_recv])
             if len(local_buffer) > 20:
                 local_buffer = local_buffer[-20:]
-                
+
             anomaly_score = 0.0
             anomaly_flag = 0
             if len(local_buffer) == 20:
-                input_data = (np.array(local_buffer) / 100.0).reshape(1, 20)
+                input_data = np.array(local_buffer).reshape(1, 20)
                 reconstruction = anomaly_model.predict(input_data, verbose=0)
                 loss_fn = tf.keras.losses.MeanSquaredError()
                 anomaly_score = float(loss_fn(input_data, reconstruction))
-                
+
                 # Debug print to see exactly what the model is thinking:
-                print(f" [Debug] Score: {anomaly_score:.5f} | Threshold: {dynamic_threshold:.5f}")
-                
+                print(f" [Debug] Net Sent: {bytes_sent}B | Recv: {bytes_recv}B | Score: {anomaly_score:.5f} | Threshold: {dynamic_threshold:.5f}")
+
                 if anomaly_score >= dynamic_threshold:
                     anomaly_flag = 1
-                    print(f" [!] ANOMALY FLAGGED: Score {anomaly_score:.5f} >= {dynamic_threshold:.5f}")
+                    print(f" [!] NETWORK ANOMALY FLAGGED: Score {anomaly_score:.5f} >= {dynamic_threshold:.5f}")
             # ────────────────────────────
             
+            # Read digital sensors
+            if GPIO_AVAILABLE:
+                ir_val = ir_sensor.value
+                pir_val = pir_sensor.value
+            else:
+                ir_val = 0
+                pir_val = 0
+
             payload_data = {
                 "node_id": NODE_ID,
                 "temperature": temp_val,
                 "humidity": hum_val,
+                "ir": ir_val,
+                "pir": pir_val,
                 "timestamp_ns": time.time_ns(),
                 "anomaly_flag": anomaly_flag,
                 "anomaly_score": anomaly_score
             }
+
+            # Optional Audio Transmission
+            import base64
+            audio_out_dir = os.path.join(BASE_DIR, "audio_out")
+            os.makedirs(audio_out_dir, exist_ok=True)
+            audio_files = [f for f in os.listdir(audio_out_dir) if f.endswith('.wav') or f.endswith('.mp3')]
+            if audio_files:
+                target_audio = audio_files[0]
+                audio_path = os.path.join(audio_out_dir, target_audio)
+                try:
+                    with open(audio_path, "rb") as af:
+                        payload_data["audio_b64"] = base64.b64encode(af.read()).decode('utf-8')
+                        payload_data["audio_filename"] = target_audio
+                    os.remove(audio_path)
+                    print(f" [Audio] Attached and removed audio file: {target_audio}")
+                except Exception as e:
+                    print(f" [Audio] Failed to process audio file: {e}")
             payload_bytes = json.dumps(payload_data).encode()
 
             # 2. ML-KEM-768 Encapsulation
@@ -199,7 +256,7 @@ def main():
                 body=envelope,
                 properties=pika.BasicProperties(content_type="application/json", delivery_mode=2)
             )
-            print(f"[Publisher] Sent Secured Telemetry | Temp: {payload_data['temperature']}°C | Hum: {payload_data['humidity']}%")
+            print(f"[Publisher] Sent Secured Telemetry | Temp: {payload_data['temperature']}°C | Hum: {payload_data['humidity']}% | IR: {payload_data['ir']} | PIR: {payload_data['pir']}")
             time.sleep(2.5)
 
     except KeyboardInterrupt:

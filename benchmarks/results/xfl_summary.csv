@@ -1,0 +1,9 @@
+metric,xfl_bcs,fedavg
+avg_bytes_per_round_all,11876,8412
+avg_bytes_per_round_steadystate,10486,8412
+ss_reduction_pct,-24.66,0.00
+avg_sparsity_pct_all,54.09,0.00
+ss_sparsity_pct,60.13,0.00
+final_loss,0.005221,0.005802
+rounds_to_converge,12,10
+warmup_cutoff_rounds,7,0

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Activity, ShieldAlert, Cpu, BrainCircuit } from 'lucide-react';
+import { Activity, ShieldAlert, Cpu, BrainCircuit, Mic } from 'lucide-react';
 import MetricsChart from './components/MetricsChart';
 import LedgerTable from './components/LedgerTable';
 import XFLPanel from './components/XFLPanel';
@@ -14,6 +14,7 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [anomalies, setAnomalies] = useState([]);
   const [xflRounds, setXflRounds] = useState([]);
+  const [liveAudio, setLiveAudio] = useState(null);
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL);
@@ -48,6 +49,8 @@ function App() {
             node_id: data.node_id,
             temperature: data.temperature !== 'N/A' ? data.temperature : null,
             humidity: data.humidity !== 'N/A' ? data.humidity : null,
+            ir: data.ir !== undefined ? data.ir : null,
+            pir: data.pir !== undefined ? data.pir : null,
           };
           return [...prev, newPoint].slice(-20);
         });
@@ -75,6 +78,25 @@ function App() {
             return [newAnomaly, ...prev].slice(0, 5);
           });
         }
+
+        if (data.audio_b64 && data.audio_filename) {
+          try {
+            const isMp3 = data.audio_filename.toLowerCase().endsWith('.mp3');
+            const mimeType = isMp3 ? 'audio/mpeg' : 'audio/wav';
+            const audioSrc = `data:${mimeType};base64,${data.audio_b64}`;
+            setLiveAudio({
+              src: audioSrc,
+              filename: data.audio_filename,
+              timestamp: new Date().toLocaleTimeString(),
+              node_id: data.node_id
+            });
+            // Try invisible auto-play as a fallback
+            const audio = new Audio(audioSrc);
+            audio.play().catch(e => console.warn("Background auto-play blocked, waiting for UI interaction."));
+          } catch (e) {
+            console.error("Failed to process audio:", e);
+          }
+        }
       }
     });
 
@@ -98,6 +120,17 @@ function App() {
           {isConnected ? 'Connected to Backend' : 'Disconnected'}
         </div>
       </header>
+
+      {liveAudio && (
+        <div className="glass-panel" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(0, 255, 100, 0.1)', border: '1px solid rgba(0, 255, 100, 0.3)' }}>
+          <Mic size={32} color="#00ff64" />
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#00ff64' }}>Live Audio Feed</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#ccc' }}>Node <strong>{liveAudio.node_id}</strong> beamed <em>{liveAudio.filename}</em> at {liveAudio.timestamp}</p>
+          </div>
+          <audio controls autoPlay src={liveAudio.src} style={{ height: '40px' }}></audio>
+        </div>
+      )}
 
       {anomalies.length > 0 && (
         <div className="alerts-container">

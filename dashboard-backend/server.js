@@ -13,7 +13,7 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // In-memory cache to send to newly connected clients
 let latestMetrics = {};
@@ -28,9 +28,13 @@ app.post('/api/data', (req, res) => {
   }
 
   // Update latest metrics for the node
+  const metricsData = { ...data };
+  delete metricsData.audio_b64;
+  delete metricsData.audio_filename;
+
   latestMetrics[data.node_id] = {
     ...latestMetrics[data.node_id],
-    ...data
+    ...metricsData
   };
 
   // Keep a small history of transactions
@@ -58,6 +62,12 @@ app.post('/api/xfl', (req, res) => {
   xflRounds.push(data);
   if (xflRounds.length > 20) xflRounds.shift(); // keep last 20 rounds
   io.emit('xfl_update', data);
+  res.status(200).json({ status: "OK" });
+});
+
+app.post('/api/audio_stream', (req, res) => {
+  const data = req.body;
+  io.emit('live_audio_stream', data);
   res.status(200).json({ status: "OK" });
 });
 

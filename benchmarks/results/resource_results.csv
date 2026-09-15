@@ -1,0 +1,4 @@
+phase,mean_cpu_pct,peak_cpu_pct,mean_mem_mb,peak_mem_mb,n_samples
+idle,0.0,0.0,252.15,252.15,10
+signing,2.07,3.1,252.38,252.39,3
+fl_training,48.45,96.9,273.06,281.6,2

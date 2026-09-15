@@ -163,7 +163,25 @@ def on_message(ch, method, properties, body):
     node_id = data.get('node_id', 'unknown_node')
     temp = data.get('temperature', 'N/A')
     hum = data.get('humidity', 'N/A')
+    ir = data.get('ir', 0)
+    pir = data.get('pir', 0)
     ts_ns = data.get('timestamp_ns', time.time_ns())
+
+    # ── Handle Audio Payload ──
+    audio_b64 = data.pop('audio_b64', None)
+    audio_filename = data.pop('audio_filename', None)
+    if audio_b64 and audio_filename:
+        import base64
+        audio_in_dir = Path(__file__).resolve().parent / "audio_in" / str(node_id)
+        audio_in_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            audio_data = base64.b64decode(audio_b64)
+            save_path = audio_in_dir / f"{ts_ns}_{audio_filename}"
+            with open(save_path, "wb") as af:
+                af.write(audio_data)
+            print(f"\n 🎵 [AUDIO] Saved {audio_filename} to {save_path}")
+        except Exception as e:
+            print(f"\n ❌ [AUDIO ERROR] Failed to decode/save audio: {e}")
 
     # Hash the payload
     payload_str = json.dumps(data, sort_keys=True).encode('utf-8')
@@ -184,17 +202,21 @@ def on_message(ch, method, properties, body):
         "node_id": str(node_id),
         "temperature": temp if temp == 'N/A' else float(temp),
         "humidity": hum if hum == 'N/A' else float(hum),
+        "ir": int(ir),
+        "pir": int(pir),
         "anomaly_class": anomaly_class,
         "ts_ns": ts_ns,
         "payload_hash": payload_hash.hex(),
-        "tx_hash": tx_hash if tx_hash else "[Besu Not Connected / Tx Failed]"
+        "tx_hash": tx_hash if tx_hash else "[Besu Not Connected / Tx Failed]",
+        "audio_b64": audio_b64,
+        "audio_filename": audio_filename
     }
         
     dashboard_status = push_to_dashboard(dashboard_payload)
 
     # In-place console log using \r
     short_tx = f"{tx_hash[:6]}..{tx_hash[-4:]}" if tx_hash else "None"
-    sys.stdout.write(f"\r[{datetime.now().strftime('%H:%M:%S')}] ✅ Node: {node_id} | {temp}°C | {hum}% | Tx: {short_tx} | Dashboard: {dashboard_status} {' '*5}")
+    sys.stdout.write(f"\r[{datetime.now().strftime('%H:%M:%S')}] ✅ Node: {node_id} | {temp}°C | {hum}% | IR: {ir} | PIR: {pir} | Tx: {short_tx} | Dashboard: {dashboard_status} {' '*5}")
     sys.stdout.flush()
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
