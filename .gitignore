@@ -7,4 +7,5 @@ tensorflow_server/__pycache__/*
 HyperledgerBesu/__pycache__/*
 xtreme_federated_learning/__pycache__/client_xfl.cpython-312.pyc
 dashboard-frontend/node_modules/*
-dashboard-backend/node_modules/* 
+dashboard-backend/node_modules/*
+*.log 

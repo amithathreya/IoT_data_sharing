@@ -98,12 +98,12 @@ class PreflightService {
     }
     items.add(PreflightItem(
       id: 'python_venv',
-      name: 'Python Environment (venv)',
-      description: 'Virtual environment for PQC consumer & Federated Learning server',
+      name: 'Python Environment (Host)',
+      description: 'Host environment (optional, as PQC consumer runs containerized in Docker)',
       isSatisfied: pythonVenvOk,
       errorOrWarning: pythonError,
       fixActionLabel: 'Create venv',
-      isCritical: false, // Can fallback to system python if packages installed
+      isCritical: false,
     ));
 
     // 4. Check Certs & PQC Keys

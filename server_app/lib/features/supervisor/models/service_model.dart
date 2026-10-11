@@ -78,17 +78,14 @@ class ServiceConfig {
     ServiceConfig(
       id: ServiceId.consumer,
       displayName: 'PQC Telemetry Consumer',
-      type: ServiceType.python,
+      type: ServiceType.docker,
       description: 'ML-KEM/ML-DSA decryptor, audio processor & Besu logger',
-      scriptPath: 'server.py',
     ),
     ServiceConfig(
       id: ServiceId.xflServer,
       displayName: 'XFL Federated Server',
-      type: ServiceType.python,
+      type: ServiceType.docker,
       description: 'Post-Quantum Federated Learning Global Aggregator',
-      scriptPath: 'server_xfl.py',
-      workingDir: 'xtreme_federated_learning',
     ),
     ServiceConfig(
       id: ServiceId.grafana,

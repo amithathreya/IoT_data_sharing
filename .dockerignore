@@ -1,0 +1,10 @@
+.git
+.github
+venv
+server_app/build
+server_app/.dart_tool
+dashboard-frontend/node_modules
+dashboard-backend/node_modules
+*.log
+*.zip
+*.tar.gz
