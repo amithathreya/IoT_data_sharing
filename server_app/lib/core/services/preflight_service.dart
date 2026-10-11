@@ -151,11 +151,11 @@ class PreflightService {
   Future<ProcessResult> installNodeDependencies() async {
     final backendDir = p.join(repoRoot.path, 'dashboard-backend');
     final npm = PlatformAdapter.getNpmExecutable();
-    return await Process.run(npm, ['install'], workingDirectory: backendDir);
+    return await Process.run(npm, ['install'], workingDirectory: backendDir, runInShell: true);
   }
 
   /// Automatically creates virtualenv
   Future<ProcessResult> createPythonVenv() async {
-    return await Process.run('python', ['-m', 'venv', 'venv'], workingDirectory: repoRoot.path);
+    return await Process.run('python', ['-m', 'venv', 'venv'], workingDirectory: repoRoot.path, runInShell: true);
   }
 }
