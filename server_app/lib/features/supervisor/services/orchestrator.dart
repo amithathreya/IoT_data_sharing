@@ -54,11 +54,14 @@ class Orchestrator extends ChangeNotifier {
       _currentStepMessage = 'Step 1/5: Starting Docker Infrastructure (RabbitMQ, Besu, Grafana)...';
       notifyListeners();
 
-      await Future.wait([
+      final infrastructureStarted = await Future.wait([
         supervisor.startService(ServiceId.rabbitmq),
         supervisor.startService(ServiceId.besu),
         supervisor.startService(ServiceId.grafana),
       ]);
+      if (infrastructureStarted.any((started) => !started)) {
+        throw StateError('One or more Docker infrastructure services failed to start');
+      }
 
       // ── Step 2: Health Gate for Infrastructure ───────────────
       _currentStepMessage = 'Step 2/5: Awaiting RabbitMQ (5671) & Besu (8545) Port Readiness...';
@@ -92,19 +95,40 @@ class Orchestrator extends ChangeNotifier {
       _currentStepMessage = 'Step 3/5: Launching Dashboard Backend (Node.js :4000)...';
       notifyListeners();
 
-      await supervisor.startService(ServiceId.dashboardBackend);
+      if (!await supervisor.startService(ServiceId.dashboardBackend)) {
+        throw StateError('Dashboard backend failed to start');
+      }
 
       // Wait for port 4000
-      await PortScannerService.waitForPort(
+      final backendReady = await PortScannerService.waitForPort(
         4000,
         maxTimeout: const Duration(seconds: 10),
       );
+      if (!backendReady) {
+        throw StateError('Dashboard backend did not open port 4000');
+      }
+
+      _currentStepMessage = 'Step 4/6: Launching Dashboard Frontend (Vite :5173)...';
+      notifyListeners();
+      if (!await supervisor.startService(ServiceId.dashboardFrontend)) {
+        throw StateError('Dashboard frontend failed to start');
+      }
+
+      final frontendReady = await PortScannerService.waitForPort(
+        5173,
+        maxTimeout: const Duration(seconds: 10),
+      );
+      if (!frontendReady) {
+        throw StateError('Dashboard frontend did not open port 5173');
+      }
 
       // ── Step 4: Start Python Federated Learning Server ────────
       _currentStepMessage = 'Step 4/5: Launching XFL Federated Learning Server...';
       notifyListeners();
 
-      await supervisor.startService(ServiceId.xflServer);
+      if (!await supervisor.startService(ServiceId.xflServer)) {
+        throw StateError('XFL server failed to start');
+      }
 
       // Short delay for FL exchange initialization
       await Future.delayed(const Duration(seconds: 2));
@@ -112,11 +136,15 @@ class Orchestrator extends ChangeNotifier {
       // ── Step 5: Start Python PQC Telemetry & Audio Consumers ────
       _currentStepMessage = 'Step 5/6: Launching PQC Telemetry Consumer (server.py)...';
       notifyListeners();
-      await supervisor.startService(ServiceId.consumer);
+      if (!await supervisor.startService(ServiceId.consumer)) {
+        throw StateError('Telemetry consumer failed to start');
+      }
 
       _currentStepMessage = 'Step 6/6: Launching PQC Audio Consumer (audio_consumer.py)...';
       notifyListeners();
-      await supervisor.startService(ServiceId.audioConsumer);
+      if (!await supervisor.startService(ServiceId.audioConsumer)) {
+        throw StateError('Audio consumer failed to start');
+      }
 
       _status = OrchestratorStatus.running;
       _currentStepMessage = 'All server services running!';
@@ -144,6 +172,7 @@ class Orchestrator extends ChangeNotifier {
       await supervisor.stopService(ServiceId.xflServer);
 
       // 2. Stop Node backend
+      await supervisor.stopService(ServiceId.dashboardFrontend);
       await supervisor.stopService(ServiceId.dashboardBackend);
 
       // 3. Stop Docker services

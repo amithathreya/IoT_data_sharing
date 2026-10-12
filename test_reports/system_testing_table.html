@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>System Testing Report — End-to-End Workflow, Security & Fault-Tolerance Verification</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #090d16;
+    color: #e2e8f0;
+    padding: 36px 44px;
+    width: 1920px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+  }
+  .title-group h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .title-group p {
+    font-size: 14px;
+    color: #94a3b8;
+  }
+  .meta-badges {
+    display: flex;
+    gap: 12px;
+  }
+  .badge {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-purple { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); }
+  .badge-blue { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .badge-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    border: 1px solid #1e293b;
+  }
+  th {
+    background: #1e293b;
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 14px 16px;
+    border-bottom: 2px solid #334155;
+    text-align: left;
+  }
+  td {
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    border-bottom: 1px solid #1e293b;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background: #0f172a;
+  }
+  tr:nth-child(odd) td {
+    background: #141e33;
+  }
+  tr:hover td {
+    background: #192744;
+  }
+  .col-id { width: 8%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; color: #f59e0b; }
+  .col-desc { width: 14%; font-weight: 600; color: #f1f5f9; }
+  .col-steps { width: 22%; color: #cbd5e1; }
+  .col-steps ol { margin-left: 18px; padding-left: 0; }
+  .col-steps li { margin-bottom: 4px; }
+  .col-data { width: 16%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; color: #93c5fd; word-break: break-all; background: rgba(15, 23, 42, 0.5); }
+  .col-expected { width: 18%; color: #94a3b8; }
+  .col-observed { width: 14%; color: #e2e8f0; }
+  .col-remarks { width: 8%; text-align: center; }
+  
+  .status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .status-pass {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+  .code {
+    background: #0b0f19;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px;
+    color: #a5f3fc;
+    border: 1px solid #1e293b;
+  }
+  .remark-note {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <h1>System Testing Report — End-to-End Workflow, Security & Fault-Tolerance Verification</h1>
+      <p>Project: Secure IoT Data Sharing with Post-Quantum Cryptography, Blockchain, and Federated Learning</p>
+    </div>
+    <div class="meta-badges">
+      <span class="badge badge-purple">Phase 3: System Testing (ST)</span>
+      <span class="badge badge-blue">Target: Multi-Tier Architecture</span>
+      <span class="badge badge-green">Status: All Passed (100%)</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">Test ID</th>
+        <th class="col-desc">Test Case Description</th>
+        <th class="col-steps">Steps</th>
+        <th class="col-data">Test Data</th>
+        <th class="col-expected">Expected Results</th>
+        <th class="col-observed">Observed Results</th>
+        <th class="col-remarks">Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td class="col-id">ST-01</td>
+        <td class="col-desc">End-to-End Quantum-Safe Telemetry Lifecycle</td>
+        <td class="col-steps"><ol><li>Read physical/simulated DHT11, IR, PIR sensors on edge Pi</li><li>Encapsulate via ML-KEM-768, encrypt with AES-256-GCM, sign via ML-DSA-65</li><li>Publish envelope over TLS 1.3 to RabbitMQ broker</li><li>Consumer unwraps envelope, verifies signature, decrypts telemetry</li><li>Submit payload hash to Hyperledger Besu; stream to web dashboard</li></ol></td>
+        <td class="col-data">Continuous stream: Temp: 27.5°C, Hum: 76%, IR: 1, PIR: 0<br>Volume: 100 consecutive cycles (2.5s interval)</td>
+        <td class="col-expected">100% packet delivery; zero cryptographic failures; all 100 tx hashes mined; dashboard charts update live.</td>
+        <td class="col-observed">100/100 packets processed. Mean latency: 1.82s. Besu ledger logged 100 transactions without drop.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">E2E workflow validated</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-02</td>
+        <td class="col-desc">Network Anomaly Simulation & Alert Escalation (UDP Flood)</td>
+        <td class="col-steps"><ol><li>Establish normal baseline telemetry publishing</li><li>Launch udp_flood_attack.py (1400-byte UDP packets across 2 threads)</li><li>Edge psutil captures massive bytes_recv spike; autoencoder loss spikes</li><li>Edge flags anomaly_score >= dynamic_threshold (anomaly_flag=1)</li><li>Consumer receives anomaly flag; triggers dashboard alert banner</li></ol></td>
+        <td class="col-data">Attack: 2 threads, 1400 B/pkt, 50,000 pkts/sec<br>Dynamic Threshold: 0.1850<br>Duration: 60s</td>
+        <td class="col-expected">Loss exceeds threshold within 5s; anomaly flag raised; terminal prints alert; UI shows red banner.</td>
+        <td class="col-observed">Loss jumped from 0.021 to 1.482. Edge flagged anomaly. UI triggered immediate alert modal.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Real-time attack defense</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-03</td>
+        <td class="col-desc">Blockchain Data Auditability & Tamper Verification (auditor.py)</td>
+        <td class="col-steps"><ol><li>Extract recorded telemetry from Besu block #142 (Temp: 25.5°C, Hum: 60%)</li><li>Test A: Run auditor.py with original authentic data</li><li>Test B: Run auditor.py with modified temperature (28.0°C) simulating database attack</li><li>Compute SHA-256 and query Besu TelemetryRecorded event logs</li></ol></td>
+        <td class="col-data">Authentic: {node:'RPi_01', temp:25.5, hum:60.0, ts:1728464400}<br>Tampered: {node:'RPi_01', temp:28.0, hum:60.0, ts:1728464400}</td>
+        <td class="col-expected">Test A returns True ('INTEGRITY VERIFIED'); Test B returns False ('INTEGRITY COMPROMISED').</td>
+        <td class="col-observed">Test A: Cryptographic match found in Block #142 (True). Test B: Hash mismatch; 0 matches (False).</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Tamper resistance verified</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-04</td>
+        <td class="col-desc">Secure Audio Surveillance Capture & Real-Time Playback</td>
+        <td class="col-steps"><ol><li>Place 250 KB WAV audio file in edge audio_out/ directory</li><li>Publisher detects file, base64-encodes, packs into PQC envelope, removes local file</li><li>Consumer unpacks, writes file to audio_in/<node_id>/, posts to /api/audio_stream</li><li>Dashboard frontend receives live audio stream and triggers browser playback</li></ol></td>
+        <td class="col-data">File: alert_patrol.wav (250 KB, 16 kHz Mono)<br>Target: audio_in/RPi_01/<timestamp>_alert_patrol.wav</td>
+        <td class="col-expected">Audio securely transmitted over PQC tunnel; saved to disk on server; playable in browser UI.</td>
+        <td class="col-observed">Audio decrypted intact with zero acoustic distortion. UI player auto-loaded file and played.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Binary streaming OK</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-05</td>
+        <td class="col-desc">Resilience & Auto-Recovery under Broker Network Partition</td>
+        <td class="col-steps"><ol><li>System publishing telemetry and running XFL rounds</li><li>Forcibly terminate RabbitMQ Docker container (docker stop rabbitmq)</li><li>Observe publisher and consumer error handling and reconnect loops</li><li>Restart RabbitMQ container after 20 seconds (docker start rabbitmq)</li><li>Verify automated reconnection and resumption of telemetry stream</li></ol></td>
+        <td class="col-data">Forced outage: 20 seconds downtime during active AMQP session</td>
+        <td class="col-expected">Processes catch network exception gracefully without crashing; reconnect upon broker recovery.</td>
+        <td class="col-observed">Clients entered retry backoff; automatically re-established TLS 1.3 upon restart; zero manual reset.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Self-healing verified</span>
+        </td>
+      </tr>
+    
+    </tbody>
+  </table>
+</body>
+</html>

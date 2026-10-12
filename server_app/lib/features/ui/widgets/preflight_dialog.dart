@@ -134,7 +134,7 @@ class PreflightDialog extends StatelessWidget {
                             ],
                           ),
                         ),
-                        if (!isOk && item.id == 'node_modules') ...[
+                        if (!isOk && (item.id == 'node_modules' || item.id == 'frontend_node_modules')) ...[
                           const SizedBox(width: 8),
                           ElevatedButton.icon(
                             onPressed: isFixingNodeDeps ? null : onInstallNodeDeps,

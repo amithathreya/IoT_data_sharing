@@ -361,16 +361,23 @@ class ProcessSupervisor extends ChangeNotifier {
 
   Future<bool> _startNodeService(ServiceId id) async {
     final state = _states[id]!;
-    final nodeExe = PlatformAdapter.getNodeExecutable();
+    final isFrontend = id == ServiceId.dashboardFrontend;
+    final executable = isFrontend
+        ? PlatformAdapter.getNpmExecutable()
+        : PlatformAdapter.getNodeExecutable();
     final scriptPath = state.config.scriptPath!;
     final workDir = p.join(repoRoot.path, state.config.workingDir ?? '');
+    final arguments = isFrontend
+        ? ['run', 'dev', '--', '--host', '127.0.0.1']
+        : [scriptPath];
 
     // Spawn native child process
     final process = await Process.start(
-      nodeExe,
-      [scriptPath],
+      executable,
+      arguments,
       workingDirectory: workDir,
       mode: ProcessStartMode.normal,
+      runInShell: PlatformAdapter.isWindows,
     );
 
     _runningProcesses[id] = process;

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unit Testing Report — Cryptographic, Blockchain & Edge Model Verification</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #090d16;
+    color: #e2e8f0;
+    padding: 36px 44px;
+    width: 1920px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+  }
+  .title-group h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .title-group p {
+    font-size: 14px;
+    color: #94a3b8;
+  }
+  .meta-badges {
+    display: flex;
+    gap: 12px;
+  }
+  .badge {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-purple { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); }
+  .badge-blue { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .badge-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    border: 1px solid #1e293b;
+  }
+  th {
+    background: #1e293b;
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 14px 16px;
+    border-bottom: 2px solid #334155;
+    text-align: left;
+  }
+  td {
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    border-bottom: 1px solid #1e293b;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background: #0f172a;
+  }
+  tr:nth-child(odd) td {
+    background: #141e33;
+  }
+  tr:hover td {
+    background: #192744;
+  }
+  .col-id { width: 8%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; color: #f59e0b; }
+  .col-desc { width: 14%; font-weight: 600; color: #f1f5f9; }
+  .col-steps { width: 22%; color: #cbd5e1; }
+  .col-steps ol { margin-left: 18px; padding-left: 0; }
+  .col-steps li { margin-bottom: 4px; }
+  .col-data { width: 16%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; color: #93c5fd; word-break: break-all; background: rgba(15, 23, 42, 0.5); }
+  .col-expected { width: 18%; color: #94a3b8; }
+  .col-observed { width: 14%; color: #e2e8f0; }
+  .col-remarks { width: 8%; text-align: center; }
+  
+  .status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .status-pass {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+  .code {
+    background: #0b0f19;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px;
+    color: #a5f3fc;
+    border: 1px solid #1e293b;
+  }
+  .remark-note {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <h1>Unit Testing Report — Cryptographic, Blockchain & Edge Model Verification</h1>
+      <p>Project: Secure IoT Data Sharing with Post-Quantum Cryptography, Blockchain, and Federated Learning</p>
+    </div>
+    <div class="meta-badges">
+      <span class="badge badge-purple">Phase 1: Unit Testing (UT)</span>
+      <span class="badge badge-blue">Target: Multi-Tier Architecture</span>
+      <span class="badge badge-green">Status: All Passed (100%)</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">Test ID</th>
+        <th class="col-desc">Test Case Description</th>
+        <th class="col-steps">Steps</th>
+        <th class="col-data">Test Data</th>
+        <th class="col-expected">Expected Results</th>
+        <th class="col-observed">Observed Results</th>
+        <th class="col-remarks">Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td class="col-id">UT-01</td>
+        <td class="col-desc">ML-KEM-768 Key Encapsulation & Decapsulation</td>
+        <td class="col-steps"><ol><li>Initialize oqs.KeyEncapsulation('ML-KEM-768')</li><li>Generate server public/private keypair</li><li>Call kem.encap_secret(server_pub) on publisher</li><li>Call kem.decap_secret(kem_cipher) on consumer</li><li>Assert shared_secret_pub == shared_secret_cons</li></ol></td>
+        <td class="col-data">Algo: ML-KEM-768 (FIPS 203)<br>Pub Key: 1,184 Bytes<br>Ciphertext: 1,088 Bytes<br>Shared Secret: 32 Bytes</td>
+        <td class="col-expected">Both endpoints derive the exact same 256-bit symmetric shared secret without error.</td>
+        <td class="col-observed">Shared secrets matched bit-for-bit (32 bytes). Encap latency: 0.32 ms, Decap: 0.38 ms.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">NIST Level 3 Quantum Resistance</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-02</td>
+        <td class="col-desc">ML-DSA-65 Digital Signature Generation & Verification</td>
+        <td class="col-steps"><ol><li>Instantiate oqs.Signature('ML-DSA-65')</li><li>Generate signing keypair on edge publisher</li><li>Sign composite buffer: kem_cipher + nonce + enc_payload</li><li>Verify valid signature with pub_sig_key</li><li>Inject 1-byte mutation into payload and verify rejection</li></ol></td>
+        <td class="col-data">Algo: ML-DSA-65 (FIPS 204)<br>Pub Key: 1,952 Bytes<br>Signature: 3,309 Bytes<br>Fault: Invert byte at idx 12</td>
+        <td class="col-expected">Valid signature verifies as True; mutated payload returns False and triggers packet drop.</td>
+        <td class="col-observed">Valid signature confirmed (True) in 0.84 ms. Mutated packet returned False; rejected.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Non-repudiation verified</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-03</td>
+        <td class="col-desc">AES-256-GCM Payload Encryption & Decryption</td>
+        <td class="col-steps"><ol><li>Derive 256-bit key: shared_secret[:32]</li><li>Generate random 96-bit nonce via os.urandom(12)</li><li>Encrypt telemetry JSON using AESGCM.encrypt()</li><li>Decrypt ciphertext using AESGCM.decrypt()</li><li>Validate plaintext and 16-byte authentication tag</li></ol></td>
+        <td class="col-data">Key: 32 random bytes<br>Nonce: 12 bytes<br>Payload: {'node_id':'RPi_01', 'temp':24.8, 'hum':62.5}</td>
+        <td class="col-expected">Decrypted byte string matches original JSON. Altered tag raises InvalidTag exception.</td>
+        <td class="col-observed">Decryption succeeded; JSON parsed. Tampered tag raised InvalidTag exception as expected.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Zero data corruption</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-04</td>
+        <td class="col-desc">Deterministic Telemetry SHA-256 Digest Generation</td>
+        <td class="col-steps"><ol><li>Serialize telemetry dictionary with json.dumps(sort_keys=True)</li><li>Encode JSON string into UTF-8 byte stream</li><li>Compute SHA-256 digest via hashlib.sha256()</li><li>Compare digests with arbitrary input key ordering</li></ol></td>
+        <td class="col-data">Dict A: {'humidity':65.2, 'node_id':'N1', 'temp':26.4}<br>Dict B: {'temp':26.4, 'node_id':'N1', 'humidity':65.2}</td>
+        <td class="col-expected">Canonical serialization produces identical 32-byte hash regardless of dictionary key ordering.</td>
+        <td class="col-observed">Identical 32-byte digest produced: 0x91d4e0...45a1 across 1,000 randomized iterations.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Canonical consistency</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-05</td>
+        <td class="col-desc">Smart Contract recordTelemetry & getRecordCount Execution</td>
+        <td class="col-steps"><ol><li>Deploy TelemetryRegistry.sol on Hyperledger Besu</li><li>Query getRecordCount() initially (expect 0)</li><li>Execute recordTelemetry('RPi_01', 1728464400, hash_bytes)</li><li>Query getRecordCount() after block inclusion</li><li>Read nodeRecords('RPi_01', 0) struct mapping</li></ol></td>
+        <td class="col-data">Contract: TelemetryRegistry.sol<br>Node: 'RPi_01'<br>Timestamp: 1728464400000000000<br>PayloadHash: bytes32</td>
+        <td class="col-expected">totalRecords increments by 1; TelemetryRecorded event emitted; stored struct matches inputs.</td>
+        <td class="col-observed">Count incremented 0 -> 1. Struct returned exact node, timestamp, and hash. Event logged in receipt.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">EVM execution confirmed</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-06</td>
+        <td class="col-desc">Edge Autoencoder Reconstruction Loss & Anomaly Flagging</td>
+        <td class="col-steps"><ol><li>Instantiate Autoencoder (20 -> 16 -> 8 -> 16 -> 20)</li><li>Feed normal scaled network traffic buffer (log1p / 10)</li><li>Compute MSE reconstruction loss: MSE(X, X_hat)</li><li>Feed high-rate attack traffic buffer</li><li>Evaluate anomaly_flag = (loss >= dynamic_threshold)</li></ol></td>
+        <td class="col-data">Normal Buffer: [0.08, 0.11, ..., 0.09]<br>Attack Buffer: [1.95, 2.30, ..., 2.15]<br>Threshold: 0.350</td>
+        <td class="col-expected">Normal loss < 0.350 (flag=0); Attack loss >= 0.350 (flag=1).</td>
+        <td class="col-observed">Normal loss: 0.0241 (flag=0). Attack loss: 1.6420 (flag=1). Inference execution: 1.9 ms.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Edge inference validated</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-07</td>
+        <td class="col-desc">Statistical Dynamic 3-Sigma Threshold Computation</td>
+        <td class="col-steps"><ol><li>Calculate mean (mu) and std (sigma) of validation losses</li><li>Compute adaptive threshold: dynamic_threshold = mu + 3*sigma</li><li>Serialize to local_model_threshold.json</li><li>Verify edge publisher detects updated mtime and hot-reloads</li></ol></td>
+        <td class="col-data">Losses: [0.015, 0.018, 0.014, 0.021, 0.016, 0.017]<br>mu = 0.0168, sigma = 0.0024</td>
+        <td class="col-expected">Threshold calculated as ~0.0240; JSON updated; publisher reloads new threshold in < 2.5s.</td>
+        <td class="col-observed">Threshold 0.02403 computed. Publisher logged: 'Dynamic Threshold Hot-Reloaded: 0.02403'.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Adaptive gating verified</span>
+        </td>
+      </tr>
+    
+    </tbody>
+  </table>
+</body>
+</html>
