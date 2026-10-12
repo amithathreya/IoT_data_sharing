@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>3.3 Hardware Requirements</title><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Times New Roman", Times, Georgia, serif;
+    background: #ffffff;
+    color: #000000;
+    width: 1000px;
+    padding: 24px 30px;
+    margin: 0 auto;
+    display: inline-block;
+  }
+  .section-title {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #000000;
+  }
+  .intro-text {
+    font-size: 11pt;
+    line-height: 1.5;
+    text-align: justify;
+    margin-bottom: 16px;
+    color: #000000;
+  }
+  .table-caption {
+    text-align: center;
+    font-size: 12pt;
+    font-weight: normal;
+    margin-bottom: 10px;
+    margin-top: 6px;
+    color: #000000;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000000;
+  }
+  th, td {
+    border: 1.5px solid #000000;
+    padding: 7px 10px;
+    font-size: 11pt;
+    line-height: 1.4;
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    font-weight: bold;
+    background: #ffffff;
+  }
+  .col-req { width: 34%; font-weight: normal; }
+  .col-desc { width: 66%; }
+  .col-comp { width: 32%; font-weight: normal; }
+  .col-spec { width: 68%; }
+</style></head>
+<body>
+  <div class="section-title">3.3 &nbsp; Hardware Requirements</div>
+  <p class="intro-text">
+    The hardware requirements outline the minimum and recommended system configurations needed to develop, train, and deploy the application. Since the project involves machine learning model training and real-time predictions through a web interface, the system must be capable of handling moderate computational tasks efficiently. Adequate memory, processing speed, and storage are necessary to ensure smooth development and testing operations.
+  </p>
+  <div class="table-caption">Table 3.3: Hardware Requirement Specification</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-comp">Component</th>
+        <th class="col-spec">Specification</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-comp">Processor</td>
+        <td class="col-spec">Intel Core i5/i7 or AMD equivalent for smooth processing of ML tasks; ARM Cortex-A72 (Raspberry Pi 4) for edge sensing node.</td>
+      </tr>
+      <tr>
+        <td class="col-comp">RAM</td>
+        <td class="col-spec">Minimum 8GB (16GB recommended) to handle data preprocessing and model execution.</td>
+      </tr>
+      <tr>
+        <td class="col-comp">Storage</td>
+        <td class="col-spec">At least 256GB SSD (512GB recommended) for faster access to model and dataset files; 32GB MicroSD for Edge Pi.</td>
+      </tr>
+      <tr>
+        <td class="col-comp">Display</td>
+        <td class="col-spec">Standard resolution display compatible with modern web browsers.</td>
+      </tr>
+      <tr>
+        <td class="col-comp">Network</td>
+        <td class="col-spec">Stable internet connection for online access and cloud deployment.</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

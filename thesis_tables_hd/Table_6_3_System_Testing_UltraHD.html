@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Table 6.3: System Testing</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Times New Roman", Times, Georgia, serif;
+    background: #ffffff;
+    color: #000000;
+    width: 1200px;
+    padding: 16px 20px 20px 20px;
+    display: inline-block;
+  }
+  .section-title {
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #000000;
+  }
+  .table-caption {
+    text-align: center;
+    font-size: 13pt;
+    font-weight: normal;
+    margin-bottom: 12px;
+    color: #000000;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000000;
+  }
+  th, td {
+    border: 1.5px solid #000000;
+    padding: 8px 10px;
+    font-size: 11.5pt;
+    line-height: 1.4;
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    font-weight: bold;
+    background: #f8fafc;
+  }
+  .col-step { width: 10%; font-weight: bold; }
+  .col-data { width: 28%; }
+  .col-expected { width: 28%; }
+  .col-observed { width: 26%; }
+  .col-remarks { width: 8%; font-weight: bold; }
+</style>
+</head>
+<body>
+  <div class="section-title">6.4 &nbsp; System Testing</div>
+  <div class="table-caption">Table 6.3: System Testing</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-step">Steps</th>
+        <th class="col-data">Test Data</th>
+        <th class="col-expected">Expected Results</th>
+        <th class="col-observed">Observed Results</th>
+        <th class="col-remarks">Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+  <tr>
+    <td class="col-step">Step 1</td>
+    <td class="col-data">Continuous sensor readings: Temp: 27.5°C, Hum: 76%, IR: 1, PIR: 0 (100 cycles at 2.5s interval)</td>
+    <td class="col-expected">100% packet delivery; all 100 hashes mined on Hyperledger Besu; live charts update continuously</td>
+    <td class="col-observed">100/100 packets processed; mean latency: 1.82s; 100 transactions verified in blockchain ledger</td>
+    <td class="col-remarks">Pass</td>
+  </tr>
+  <tr>
+    <td class="col-step">Step 2</td>
+    <td class="col-data">UDP flood attack via udp_flood_attack.py (2 threads, 1400 B/pkt, 50k pkts/sec); Threshold: 0.1850</td>
+    <td class="col-expected">Edge model loss exceeds threshold within 5s; anomaly flagged; UI displays red alert banner</td>
+    <td class="col-observed">Reconstruction loss jumped from 0.021 to 1.482; edge flagged anomaly; UI alert modal displayed</td>
+    <td class="col-remarks">Pass</td>
+  </tr>
+  <tr>
+    <td class="col-step">Step 3</td>
+    <td class="col-data">Case A: Authentic data {temp: 25.5°C}; Case B: Tampered data {temp: 28.0°C}; verified via auditor.py</td>
+    <td class="col-expected">Authentic data returns 'INTEGRITY VERIFIED'; tampered data returns 'INTEGRITY COMPROMISED'</td>
+    <td class="col-observed">Authentic data matched Block #142 (True); tampered data failed hash match (False)</td>
+    <td class="col-remarks">Pass</td>
+  </tr>
+  <tr>
+    <td class="col-step">Step 4</td>
+    <td class="col-data">250 KB WAV audio file placed in edge audio_out/ directory during active monitoring</td>
+    <td class="col-expected">File encrypted via PQC tunnel, transferred to consumer, saved to disk, and played in UI</td>
+    <td class="col-observed">Audio decrypted intact with zero acoustic distortion; auto-playback executed in browser</td>
+    <td class="col-remarks">Pass</td>
+  </tr>
+  <tr>
+    <td class="col-step">Step 5</td>
+    <td class="col-data">Sudden termination of RabbitMQ Docker container (docker stop rabbitmq) for 20 seconds</td>
+    <td class="col-expected">Publisher and consumer catch socket disconnect gracefully; auto-reconnect upon broker restart</td>
+    <td class="col-observed">Processes entered retry backoff; automatically reconnected upon restart; zero manual intervention</td>
+    <td class="col-remarks">Pass</td>
+  </tr>
+
+    </tbody>
+  </table>
+</body>
+</html>

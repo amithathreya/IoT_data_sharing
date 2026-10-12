@@ -87,6 +87,19 @@ class PreflightService {
       isCritical: true,
     ));
 
+    final frontendModulesDir = Directory(p.join(repoRoot.path, 'dashboard-frontend', 'node_modules'));
+    items.add(PreflightItem(
+      id: 'frontend_node_modules',
+      name: 'Dashboard Frontend Dependencies',
+      description: 'Vite and React packages for the dashboard on port 5173',
+      isSatisfied: frontendModulesDir.existsSync(),
+      errorOrWarning: frontendModulesDir.existsSync()
+          ? null
+          : 'node_modules missing in dashboard-frontend (npm install required)',
+      fixActionLabel: 'Run npm install',
+      isCritical: true,
+    ));
+
     // 3. Check Python venv
     bool pythonVenvOk = false;
     String? pythonError;
@@ -149,9 +162,23 @@ class PreflightService {
 
   /// Automatically executes `npm install` inside `dashboard-backend`
   Future<ProcessResult> installNodeDependencies() async {
-    final backendDir = p.join(repoRoot.path, 'dashboard-backend');
     final npm = PlatformAdapter.getNpmExecutable();
-    return await Process.run(npm, ['install'], workingDirectory: backendDir, runInShell: true);
+    final backendDir = p.join(repoRoot.path, 'dashboard-backend');
+    final backendResult = await Process.run(
+      npm,
+      ['install'],
+      workingDirectory: backendDir,
+      runInShell: true,
+    );
+    if (backendResult.exitCode != 0) return backendResult;
+
+    final frontendDir = p.join(repoRoot.path, 'dashboard-frontend');
+    return await Process.run(
+      npm,
+      ['install'],
+      workingDirectory: frontendDir,
+      runInShell: true,
+    );
   }
 
   /// Automatically creates virtualenv

@@ -22,6 +22,8 @@ class ServiceCard extends StatelessWidget {
         return Icons.hub_rounded;
       case ServiceId.dashboardBackend:
         return Icons.developer_board_rounded;
+      case ServiceId.dashboardFrontend:
+        return Icons.dashboard_customize_rounded;
       case ServiceId.consumer:
         return Icons.shield_outlined;
       case ServiceId.audioConsumer:
@@ -41,6 +43,8 @@ class ServiceCard extends StatelessWidget {
         return const Color(0xFF2563EB);
       case ServiceId.dashboardBackend:
         return const Color(0xFF16A34A);
+      case ServiceId.dashboardFrontend:
+        return const Color(0xFF0D9488);
       case ServiceId.consumer:
         return const Color(0xFF2563EB);
       case ServiceId.audioConsumer:

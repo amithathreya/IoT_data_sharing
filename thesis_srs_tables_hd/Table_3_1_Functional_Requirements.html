@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Table 3.1: Functional Requirements</title><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Times New Roman", Times, Georgia, serif;
+    background: #ffffff;
+    color: #000000;
+    width: 1000px;
+    padding: 24px 30px;
+    margin: 0 auto;
+    display: inline-block;
+  }
+  .section-title {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #000000;
+  }
+  .intro-text {
+    font-size: 11pt;
+    line-height: 1.5;
+    text-align: justify;
+    margin-bottom: 16px;
+    color: #000000;
+  }
+  .table-caption {
+    text-align: center;
+    font-size: 12pt;
+    font-weight: normal;
+    margin-bottom: 10px;
+    margin-top: 6px;
+    color: #000000;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000000;
+  }
+  th, td {
+    border: 1.5px solid #000000;
+    padding: 7px 10px;
+    font-size: 11pt;
+    line-height: 1.4;
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    font-weight: bold;
+    background: #ffffff;
+  }
+  .col-req { width: 34%; font-weight: normal; }
+  .col-desc { width: 66%; }
+  .col-comp { width: 32%; font-weight: normal; }
+  .col-spec { width: 68%; }
+</style></head>
+<body>
+  <div class="table-caption">Table 3.1: Functional Requirements</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-req">Requirement</th>
+        <th class="col-desc">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-req">MIoT Device Registration</td>
+        <td class="col-desc">The system should allow authorized MIoT nodes or workers to participate in the distributed security framework.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Local Model Training</td>
+        <td class="col-desc">Each participant worker should train the machine learning model using its own dataset without directly sharing the raw data with other workers.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Federated Model Aggregation</td>
+        <td class="col-desc">The system should collect model updates from the participating workers and create an updated global model through Federated Learning.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Anomaly/Intrusion Detection</td>
+        <td class="col-desc">The learning model should recognize network behaviors which are likely to be abnormal or malicious.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Secure Model Communication</td>
+        <td class="col-desc">Model updates and corresponding communication should be secured by utilizing secure communication means.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Blockchain Transaction Management</td>
+        <td class="col-desc">The system should log relevant security and verification transactions via the Blockchain layer.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Transaction Integrity Verification</td>
+        <td class="col-desc">The system should provide tamper-resistant verification of logged blockchain transactions.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Post-Quantum Security</td>
+        <td class="col-desc">The system should adopt post-quantum cryptography approaches to prevent potential quantum-based attacks.</td>
+      </tr>
+      <tr>
+        <td class="col-req">Communication Efficiency Evaluation</td>
+        <td class="col-desc">The system should monitor the performance associated with communication processes during distributed learning and data exchange.</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

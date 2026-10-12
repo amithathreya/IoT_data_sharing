@@ -8,26 +8,21 @@ class PlatformAdapter {
 
   /// Dynamically locates the IoT_data_sharing repository root
   static Directory findRepoRoot() {
-    Directory current = Directory.current;
+    var current = Directory.current;
 
-    // Check if current directory has server.py
-    if (File(p.join(current.path, 'server.py')).existsSync()) {
-      return current;
+    // A packaged desktop executable can be several directories below the repository root.
+    while (true) {
+      if (File(p.join(current.path, 'server.py')).existsSync() &&
+          Directory(p.join(current.path, 'dashboard-frontend')).existsSync()) {
+        return current;
+      }
+
+      final parent = current.parent;
+      if (parent.path == current.path) break;
+      current = parent;
     }
 
-    // Check parent directory
-    Directory parent = current.parent;
-    if (File(p.join(parent.path, 'server.py')).existsSync()) {
-      return parent;
-    }
-
-    // Default known path if launched from IDE or arbitrary path
-    if (isWindows) {
-      final hardcoded = Directory(r'd:\Server-App\IoT_data_sharing');
-      if (hardcoded.existsSync()) return hardcoded;
-    }
-
-    return current;
+    return Directory.current;
   }
 
   /// Resolves the Python executable path within the virtualenv or system

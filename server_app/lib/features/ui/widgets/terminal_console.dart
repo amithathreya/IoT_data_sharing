@@ -53,6 +53,8 @@ class _TerminalConsoleState extends State<TerminalConsole> {
         return const Color(0xFF2563EB);
       case ServiceId.dashboardBackend:
         return const Color(0xFF16A34A);
+      case ServiceId.dashboardFrontend:
+        return const Color(0xFF0D9488);
       case ServiceId.consumer:
         return const Color(0xFF0284C7);
       case ServiceId.audioConsumer:

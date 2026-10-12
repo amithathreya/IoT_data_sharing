@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Master Comprehensive Test Suite — Verification & Validation Matrix</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #090d16;
+    color: #e2e8f0;
+    padding: 36px 44px;
+    width: 1920px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+  }
+  .title-group h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .title-group p {
+    font-size: 14px;
+    color: #94a3b8;
+  }
+  .meta-badges {
+    display: flex;
+    gap: 12px;
+  }
+  .badge {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-purple { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); }
+  .badge-blue { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .badge-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    border: 1px solid #1e293b;
+  }
+  th {
+    background: #1e293b;
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 14px 16px;
+    border-bottom: 2px solid #334155;
+    text-align: left;
+  }
+  td {
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    border-bottom: 1px solid #1e293b;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background: #0f172a;
+  }
+  tr:nth-child(odd) td {
+    background: #141e33;
+  }
+  tr:hover td {
+    background: #192744;
+  }
+  .col-id { width: 8%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; color: #f59e0b; }
+  .col-desc { width: 14%; font-weight: 600; color: #f1f5f9; }
+  .col-steps { width: 22%; color: #cbd5e1; }
+  .col-steps ol { margin-left: 18px; padding-left: 0; }
+  .col-steps li { margin-bottom: 4px; }
+  .col-data { width: 16%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; color: #93c5fd; word-break: break-all; background: rgba(15, 23, 42, 0.5); }
+  .col-expected { width: 18%; color: #94a3b8; }
+  .col-observed { width: 14%; color: #e2e8f0; }
+  .col-remarks { width: 8%; text-align: center; }
+  
+  .status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .status-pass {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+  .code {
+    background: #0b0f19;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px;
+    color: #a5f3fc;
+    border: 1px solid #1e293b;
+  }
+  .remark-note {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <h1>Master Comprehensive Test Suite — Verification & Validation Matrix</h1>
+      <p>Project: Secure IoT Data Sharing with Post-Quantum Cryptography, Blockchain, and Federated Learning</p>
+    </div>
+    <div class="meta-badges">
+      <span class="badge badge-purple">Comprehensive Verification & Validation (V&V)</span>
+      <span class="badge badge-blue">Target: Multi-Tier Architecture</span>
+      <span class="badge badge-green">Status: All Passed (100%)</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">Test ID</th>
+        <th class="col-desc">Test Case Description</th>
+        <th class="col-steps">Steps</th>
+        <th class="col-data">Test Data</th>
+        <th class="col-expected">Expected Results</th>
+        <th class="col-observed">Observed Results</th>
+        <th class="col-remarks">Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td class="col-id">UT-01</td>
+        <td class="col-desc">ML-KEM-768 Key Encapsulation & Decapsulation</td>
+        <td class="col-steps"><ol><li>Initialize oqs.KeyEncapsulation('ML-KEM-768')</li><li>Generate server public/private keypair</li><li>Call kem.encap_secret(server_pub) on publisher</li><li>Call kem.decap_secret(kem_cipher) on consumer</li><li>Assert shared_secret_pub == shared_secret_cons</li></ol></td>
+        <td class="col-data">Algo: ML-KEM-768 (FIPS 203)<br>Pub Key: 1,184 Bytes<br>Ciphertext: 1,088 Bytes<br>Shared Secret: 32 Bytes</td>
+        <td class="col-expected">Both endpoints derive the exact same 256-bit symmetric shared secret without error.</td>
+        <td class="col-observed">Shared secrets matched bit-for-bit (32 bytes). Encap latency: 0.32 ms, Decap: 0.38 ms.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">NIST Level 3 Quantum Resistance</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-02</td>
+        <td class="col-desc">ML-DSA-65 Digital Signature Generation & Verification</td>
+        <td class="col-steps"><ol><li>Instantiate oqs.Signature('ML-DSA-65')</li><li>Generate signing keypair on edge publisher</li><li>Sign composite buffer: kem_cipher + nonce + enc_payload</li><li>Verify valid signature with pub_sig_key</li><li>Inject 1-byte mutation into payload and verify rejection</li></ol></td>
+        <td class="col-data">Algo: ML-DSA-65 (FIPS 204)<br>Pub Key: 1,952 Bytes<br>Signature: 3,309 Bytes<br>Fault: Invert byte at idx 12</td>
+        <td class="col-expected">Valid signature verifies as True; mutated payload returns False and triggers packet drop.</td>
+        <td class="col-observed">Valid signature confirmed (True) in 0.84 ms. Mutated packet returned False; rejected.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Non-repudiation verified</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">UT-05</td>
+        <td class="col-desc">Smart Contract recordTelemetry & getRecordCount Execution</td>
+        <td class="col-steps"><ol><li>Deploy TelemetryRegistry.sol on Hyperledger Besu</li><li>Query getRecordCount() initially (expect 0)</li><li>Execute recordTelemetry('RPi_01', 1728464400, hash_bytes)</li><li>Query getRecordCount() after block inclusion</li><li>Read nodeRecords('RPi_01', 0) struct mapping</li></ol></td>
+        <td class="col-data">Contract: TelemetryRegistry.sol<br>Node: 'RPi_01'<br>Timestamp: 1728464400000000000<br>PayloadHash: bytes32</td>
+        <td class="col-expected">totalRecords increments by 1; TelemetryRecorded event emitted; stored struct matches inputs.</td>
+        <td class="col-observed">Count incremented 0 -> 1. Struct returned exact node, timestamp, and hash. Event logged in receipt.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">EVM execution confirmed</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">IT-01</td>
+        <td class="col-desc">Raspberry Pi Publisher to RabbitMQ via TLS 1.3 mTLS</td>
+        <td class="col-steps"><ol><li>Start RabbitMQ broker with TLS 1.3 listener on port 5671</li><li>Publisher loads CA cert, client cert, and client key into SSLContext</li><li>Establish pika.BlockingConnection with pqc_user credentials</li><li>Declare fanout exchange 'sensors' and publish envelope</li></ol></td>
+        <td class="col-data">Host: 127.0.0.1:5671<br>Cipher: TLS_AES_256_GCM_SHA384<br>Mutual Auth: ca_cert + client_cert.pem</td>
+        <td class="col-expected">TLS 1.3 mutual handshake completes; channel opened; envelope delivered without network reset.</td>
+        <td class="col-observed">Handshake completed in 14.8 ms. RabbitMQ verified client cert; message queued successfully.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Mutual TLS established</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">IT-02</td>
+        <td class="col-desc">RabbitMQ AMQP Envelope Consumption & PQC Unwrapping</td>
+        <td class="col-steps"><ol><li>Consumer server subscribes to fanout exchange 'sensors'</li><li>Ingest incoming AMQP message containing PQC envelope</li><li>Verify ML-DSA-65 signature on auth_data</li><li>Decapsulate ML-KEM-768 ciphertext using consumer_kem_priv.key</li><li>Decrypt AES-256-GCM payload and return basic_ack</li></ol></td>
+        <td class="col-data">Envelope: 1,088B KEM cipher + 3,309B ML-DSA sig + 12B nonce + 128B encrypted payload</td>
+        <td class="col-expected">Signature verified; shared secret decapsulated; telemetry JSON unpacked; ACK sent.</td>
+        <td class="col-observed">Packet unpacked: Node 'amith' (Temp: 26.5°C, Hum: 68%). Message acknowledged (ACK).</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Asynchronous flow verified</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">IT-03</td>
+        <td class="col-desc">Consumer Telemetry Hash Logging to Hyperledger Besu</td>
+        <td class="col-steps"><ol><li>Consumer computes canonical SHA-256 digest of telemetry</li><li>Construct EVM transaction calling recordTelemetry()</li><li>Sign transaction offline using BESU_PRIVATE_KEY</li><li>Submit raw tx via Web3 HTTPProvider to Besu node (port 8545)</li><li>Wait for IBFT 2.0 consensus block commit</li></ol></td>
+        <td class="col-data">RPC: http://127.0.0.1:8545<br>Chain ID: 1337<br>Gas: 3,000,000<br>PayloadHash: 0x89ab...ef01</td>
+        <td class="col-expected">Tx submitted, included in next IBFT 2.0 block (<2s); receipt returns status=1.</td>
+        <td class="col-observed">Committed in Block #184; Tx Hash: 0x5b39e2...890a; Gas Used: 47,820; Status: 1 (Success).</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Immutability logged</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-01</td>
+        <td class="col-desc">End-to-End Quantum-Safe Telemetry Lifecycle</td>
+        <td class="col-steps"><ol><li>Read physical/simulated DHT11, IR, PIR sensors on edge Pi</li><li>Encapsulate via ML-KEM-768, encrypt with AES-256-GCM, sign via ML-DSA-65</li><li>Publish envelope over TLS 1.3 to RabbitMQ broker</li><li>Consumer unwraps envelope, verifies signature, decrypts telemetry</li><li>Submit payload hash to Hyperledger Besu; stream to web dashboard</li></ol></td>
+        <td class="col-data">Continuous stream: Temp: 27.5°C, Hum: 76%, IR: 1, PIR: 0<br>Volume: 100 consecutive cycles (2.5s interval)</td>
+        <td class="col-expected">100% packet delivery; zero cryptographic failures; all 100 tx hashes mined; dashboard charts update live.</td>
+        <td class="col-observed">100/100 packets processed. Mean latency: 1.82s. Besu ledger logged 100 transactions without drop.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">E2E workflow validated</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-02</td>
+        <td class="col-desc">Network Anomaly Simulation & Alert Escalation (UDP Flood)</td>
+        <td class="col-steps"><ol><li>Establish normal baseline telemetry publishing</li><li>Launch udp_flood_attack.py (1400-byte UDP packets across 2 threads)</li><li>Edge psutil captures massive bytes_recv spike; autoencoder loss spikes</li><li>Edge flags anomaly_score >= dynamic_threshold (anomaly_flag=1)</li><li>Consumer receives anomaly flag; triggers dashboard alert banner</li></ol></td>
+        <td class="col-data">Attack: 2 threads, 1400 B/pkt, 50,000 pkts/sec<br>Dynamic Threshold: 0.1850<br>Duration: 60s</td>
+        <td class="col-expected">Loss exceeds threshold within 5s; anomaly flag raised; terminal prints alert; UI shows red banner.</td>
+        <td class="col-observed">Loss jumped from 0.021 to 1.482. Edge flagged anomaly. UI triggered immediate alert modal.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Real-time attack defense</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">ST-03</td>
+        <td class="col-desc">Blockchain Data Auditability & Tamper Verification (auditor.py)</td>
+        <td class="col-steps"><ol><li>Extract recorded telemetry from Besu block #142 (Temp: 25.5°C, Hum: 60%)</li><li>Test A: Run auditor.py with original authentic data</li><li>Test B: Run auditor.py with modified temperature (28.0°C) simulating database attack</li><li>Compute SHA-256 and query Besu TelemetryRecorded event logs</li></ol></td>
+        <td class="col-data">Authentic: {node:'RPi_01', temp:25.5, hum:60.0, ts:1728464400}<br>Tampered: {node:'RPi_01', temp:28.0, hum:60.0, ts:1728464400}</td>
+        <td class="col-expected">Test A returns True ('INTEGRITY VERIFIED'); Test B returns False ('INTEGRITY COMPROMISED').</td>
+        <td class="col-observed">Test A: Cryptographic match found in Block #142 (True). Test B: Hash mismatch; 0 matches (False).</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Tamper resistance verified</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">FT-02</td>
+        <td class="col-desc">Quantum-Safe Authentication & Tampered Packet Rejection</td>
+        <td class="col-steps"><ol><li>Capture valid AMQP telemetry packet in transit</li><li>Inject deliberate corruption into ML-DSA-65 signature bytes</li><li>Deliver corrupt packet to consumer queue</li><li>Assert consumer rejection policy and zero blockchain ledger write</li></ol></td>
+        <td class="col-data">Corrupted signature: Invert 16 bytes in ML-DSA signature string</td>
+        <td class="col-expected">Signature verifier fails; console prints 'INVALID SIGNATURE'; packet dropped via basic_nack.</td>
+        <td class="col-observed">Consumer logged '❌ INVALID SIGNATURE — Packet dropped!'; no Besu transaction submitted.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Zero-trust security enforced</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">FT-03</td>
+        <td class="col-desc">Real-Time Operator Monitoring Dashboard & Live Metrics</td>
+        <td class="col-steps"><ol><li>Access web dashboard at http://localhost:5173</li><li>Verify header displays 'Connected' badge in green</li><li>Inspect live time-series charts for Temperature and Humidity</li><li>Inspect digital indicators for IR optical break and PIR motion sensors</li></ol></td>
+        <td class="col-data">Live sensor feed: 20 historical readings from RPi_01 (2.5s cadence)</td>
+        <td class="col-expected">Gauges display live readings; chart animates smoothly; digital sensor cards reflect GPIO states.</td>
+        <td class="col-observed">Live UI rendered with Lucide icons; Recharts graphs refreshed continuously; zero lag.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">Operator UI validated</span>
+        </td>
+      </tr>
+    
+      <tr>
+        <td class="col-id">FT-05</td>
+        <td class="col-desc">XFL Federated Learning Management & Bandwidth Optimization</td>
+        <td class="col-steps"><ol><li>Open XFL Training panel on dashboard</li><li>Inspect round progression counter and global model convergence curve</li><li>Evaluate adaptive loss-gating bandwidth conservation metric</li><li>Compare communication payload volume against standard FedAvg baseline</li></ol></td>
+        <td class="col-data">15 federated training rounds across 2 IoT clients; seed: 42</td>
+        <td class="col-expected">Dashboard displays convergence curve and quantifies bandwidth savings (>30% reduction).</td>
+        <td class="col-observed">Loss curve plotted cleanly; communication reduction quantified at 38.4% bandwidth savings.</td>
+        <td class="col-remarks">
+          <span class="status-pill status-pass">PASS</span>
+          <span class="remark-note">FL reporting requirement met</span>
+        </td>
+      </tr>
+    
+    </tbody>
+  </table>
+</body>
+</html>

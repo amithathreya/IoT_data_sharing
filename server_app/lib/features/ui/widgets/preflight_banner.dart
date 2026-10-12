@@ -75,7 +75,7 @@ class PreflightBanner extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           // If node_modules is unsatisfied, provide quick install button
-          if (unsatisfiedItems.any((i) => i.id == 'node_modules')) ...[
+          if (unsatisfiedItems.any((i) => i.id == 'node_modules' || i.id == 'frontend_node_modules')) ...[
             ElevatedButton.icon(
               onPressed: isFixingNodeDeps ? null : onInstallNodeDeps,
               icon: isFixingNodeDeps
