@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Background & Surface (matching clean enterprise supervisor layout in provided image)
-  static const Color background = Color(0xFFF8FAFC);
+  static const Color background = Color(0xFF242424);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceElevated = Color(0xFFF1F5F9);
   static const Color border = Color(0xFFE2E8F0);
