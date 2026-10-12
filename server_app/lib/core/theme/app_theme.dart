@@ -1,57 +1,61 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Background & Surface (matching clean enterprise supervisor layout in provided image)
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceElevated = Color(0xFFF1F5F9);
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color borderSubtle = Color(0xFFCBD5E1);
+  // Background & Surface
+  static const Color background = Color(0xFF11161C);
+  static const Color surface = Color(0xFF1A212B);
+  static const Color surfaceElevated = Color(0xFF232D3A);
+  static const Color border = Color(0xFF344050);
+  static const Color borderSubtle = Color(0xFF455367);
 
   // Brand / Action Colors
-  static const Color primaryBlue = Color(0xFF2563EB);
-  static const Color primaryBlueHover = Color(0xFF1D4ED8);
-  static const Color primaryBlueLight = Color(0xFFEFF6FF);
-  static const Color primaryBlueBorder = Color(0xFFBFDBFE);
+  static const Color primaryBlue = Color(0xFF63A5FF);
+  static const Color primaryBlueHover = Color(0xFF3E8EFF);
+  static const Color primaryBlueLight = Color(0xFF1E2F47);
+  static const Color primaryBlueBorder = Color(0xFF3A4F6D);
 
   // Status Colors
-  static const Color statusGreen = Color(0xFF10B981);
-  static const Color statusGreenLight = Color(0xFFECFDF5);
-  static const Color statusGreenBorder = Color(0xFFA7F3D0);
+  static const Color statusGreen = Color(0xFF43C990);
+  static const Color statusGreenLight = Color(0xFF1B3329);
+  static const Color statusGreenBorder = Color(0xFF2F5B49);
 
-  static const Color statusAmber = Color(0xFFD97706);
-  static const Color statusAmberLight = Color(0xFFFFFBEB);
-  static const Color statusAmberBorder = Color(0xFFFDE68A);
+  static const Color statusAmber = Color(0xFFF2B35B);
+  static const Color statusAmberLight = Color(0xFF3A2F1F);
+  static const Color statusAmberBorder = Color(0xFF5C4A2F);
 
-  static const Color statusRed = Color(0xFFDC2626);
-  static const Color statusRedLight = Color(0xFFFEE2E2);
-  static const Color statusRedBorder = Color(0xFFFECACA);
+  static const Color statusRed = Color(0xFFFF7A7A);
+  static const Color statusRedLight = Color(0xFF3E2427);
+  static const Color statusRedBorder = Color(0xFF6A3A3F);
 
-  static const Color statusPurple = Color(0xFF9333EA);
-  static const Color statusPurpleLight = Color(0xFFFAF5FF);
+  static const Color statusPurple = Color(0xFFC18BFF);
+  static const Color statusPurpleLight = Color(0xFF352945);
 
-  static const Color statusCyan = Color(0xFF0284C7);
-  static const Color statusIndigo = Color(0xFF6366F1);
+  static const Color statusCyan = Color(0xFF4ABED9);
+  static const Color statusIndigo = Color(0xFF96A0FF);
 
   // Text Colors
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF475569);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color textSubtle = Color(0xFF94A3B8);
+  static const Color textPrimary = Color(0xFFE9EEF5);
+  static const Color textSecondary = Color(0xFFB7C2CF);
+  static const Color textMuted = Color(0xFF8D9AAD);
+  static const Color textSubtle = Color(0xFF6D7B90);
 
   static ThemeData get lightTheme {
     return ThemeData(
-      brightness: Brightness.light,
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: background,
       primaryColor: primaryBlue,
       cardColor: surface,
       dividerColor: border,
       fontFamily: 'Segoe UI',
-      colorScheme: const ColorScheme.light(
+      colorScheme: const ColorScheme.dark(
         primary: primaryBlue,
         secondary: statusGreen,
         surface: surface,
         error: statusRed,
+        onPrimary: Colors.white,
+        onSecondary: Color(0xFF04150C),
+        onSurface: textPrimary,
+        onError: Color(0xFF2B0000),
       ),
       cardTheme: CardThemeData(
         color: surface,
@@ -65,6 +69,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryBlue,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: surfaceElevated,
+          disabledForegroundColor: textSubtle,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -73,7 +79,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: textPrimary,
+          foregroundColor: textSecondary,
+          backgroundColor: surface,
           side: const BorderSide(color: borderSubtle),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
