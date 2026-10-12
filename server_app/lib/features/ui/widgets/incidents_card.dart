@@ -23,9 +23,9 @@ class IncidentsCard extends StatelessWidget {
       margin: const EdgeInsets.only(left: 20, right: 20, top: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.statusRed.withOpacity(0.06),
+        color: AppTheme.statusRedLight,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.statusRed.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.statusRedBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,8 +34,8 @@ class IncidentsCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppTheme.statusRed.withOpacity(0.2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -59,7 +59,7 @@ class IncidentsCard extends StatelessWidget {
                 onPressed: () => supervisor.clearAllIncidents(),
                 child: const Text(
                   'Dismiss All',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                  style: TextStyle(color: Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -75,9 +75,9 @@ class IncidentsCard extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.surface,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.border),
+                  border: Border.all(color: AppTheme.statusRedBorder),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +86,7 @@ class IncidentsCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppTheme.statusRed.withOpacity(0.15),
+                        color: AppTheme.statusRedLight,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -150,14 +150,13 @@ class IncidentsCard extends StatelessWidget {
                         icon: const Icon(Icons.refresh, size: 14),
                         label: const Text('Restart'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              AppTheme.statusAmber.withOpacity(0.18),
+                          backgroundColor: AppTheme.statusAmberLight,
                           foregroundColor: AppTheme.statusAmber,
-                          side: BorderSide(
-                              color: AppTheme.statusAmber.withOpacity(0.4)),
+                          elevation: 0,
+                          side: const BorderSide(color: Color(0xFFFBBF24)),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
-                          textStyle: const TextStyle(fontSize: 11),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ),
                     IconButton(

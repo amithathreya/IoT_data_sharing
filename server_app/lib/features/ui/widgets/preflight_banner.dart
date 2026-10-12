@@ -24,23 +24,27 @@ class PreflightBanner extends StatelessWidget {
 
     final unsatisfiedItems = report!.items.where((i) => !i.isSatisfied).toList();
     final isCritical = report!.hasCriticalErrors;
-    final color = isCritical ? AppTheme.statusRed : AppTheme.statusAmber;
+    final bgColor = isCritical ? AppTheme.statusRedLight : AppTheme.statusAmberLight;
+    final borderColor = isCritical ? AppTheme.statusRedBorder : AppTheme.statusAmberBorder;
+    final titleColor = isCritical ? const Color(0xFF991B1B) : const Color(0xFF92400E);
+    final descColor = isCritical ? AppTheme.statusRed : const Color(0xFFB45309);
+    final iconColor = isCritical ? AppTheme.statusRed : AppTheme.statusAmber;
 
     return Container(
       margin: const EdgeInsets.only(left: 20, right: 20, top: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.35)),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             isCritical ? Icons.error_outline_rounded : Icons.warning_amber_rounded,
-            color: color,
-            size: 24,
+            color: iconColor,
+            size: 26,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -52,17 +56,18 @@ class PreflightBanner extends StatelessWidget {
                       ? 'Preflight Checklist: Critical Requirements Missing'
                       : 'Preflight Checklist: Recommended Configuration Missing',
                   style: TextStyle(
-                    color: color,
+                    color: titleColor,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: 13.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   unsatisfiedItems.map((i) => '${i.name}: ${i.errorOrWarning}').join(' • '),
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
+                  style: TextStyle(
+                    color: descColor,
                     fontSize: 12,
+                    height: 1.3,
                   ),
                 ),
               ],
@@ -70,29 +75,31 @@ class PreflightBanner extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           // If node_modules is unsatisfied, provide quick install button
-          if (unsatisfiedItems.any((i) => i.id == 'node_modules'))
+          if (unsatisfiedItems.any((i) => i.id == 'node_modules')) ...[
             ElevatedButton.icon(
               onPressed: isFixingNodeDeps ? null : onInstallNodeDeps,
               icon: isFixingNodeDeps
                   ? const SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.statusCyan),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.download_rounded, size: 16),
+                  : const Icon(Icons.download_rounded, size: 14),
               label: Text(isFixingNodeDeps ? 'Installing...' : 'Run npm install'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.statusCyan.withOpacity(0.2),
-                foregroundColor: AppTheme.statusCyan,
-                side: BorderSide(color: AppTheme.statusCyan.withOpacity(0.4)),
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
           IconButton(
             tooltip: 'Re-run Preflight Audit',
             onPressed: onRefresh,
-            icon: const Icon(Icons.refresh, size: 18, color: AppTheme.textSecondary),
+            icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF475569)),
           ),
         ],
       ),

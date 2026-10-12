@@ -109,11 +109,14 @@ class Orchestrator extends ChangeNotifier {
       // Short delay for FL exchange initialization
       await Future.delayed(const Duration(seconds: 2));
 
-      // ── Step 5: Start Python PQC Telemetry Consumer ───────────
-      _currentStepMessage = 'Step 5/5: Launching PQC Telemetry Consumer (server.py)...';
+      // ── Step 5: Start Python PQC Telemetry & Audio Consumers ────
+      _currentStepMessage = 'Step 5/6: Launching PQC Telemetry Consumer (server.py)...';
       notifyListeners();
-
       await supervisor.startService(ServiceId.consumer);
+
+      _currentStepMessage = 'Step 6/6: Launching PQC Audio Consumer (audio_consumer.py)...';
+      notifyListeners();
+      await supervisor.startService(ServiceId.audioConsumer);
 
       _status = OrchestratorStatus.running;
       _currentStepMessage = 'All server services running!';
@@ -136,6 +139,7 @@ class Orchestrator extends ChangeNotifier {
 
     try {
       // 1. Stop Python workers
+      await supervisor.stopService(ServiceId.audioConsumer);
       await supervisor.stopService(ServiceId.consumer);
       await supervisor.stopService(ServiceId.xflServer);
 

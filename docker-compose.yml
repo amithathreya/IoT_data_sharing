@@ -51,6 +51,28 @@ services:
     depends_on:
       - rabbitmq
 
+  audio-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pqc-audio-consumer
+    command: ["python", "-u", "audio_consumer.py"]
+    restart: unless-stopped
+    environment:
+      - BROKER_HOST=rabbitmq
+      - BROKER_PORT=5671
+      - BESU_RPC_URL=http://host.docker.internal:8545
+      - DASHBOARD_URL=http://host.docker.internal:4000/api/audio_stream
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./audio_in:/app/audio_in
+      - ./contract_abi.json:/app/contract_abi.json:ro
+      - ./contract_address.txt:/app/contract_address.txt:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - rabbitmq
+
   xfl:
     build:
       context: .

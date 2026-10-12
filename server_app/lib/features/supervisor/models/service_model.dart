@@ -3,6 +3,7 @@ enum ServiceId {
   besu,
   dashboardBackend,
   consumer,
+  audioConsumer,
   xflServer,
   grafana,
 }
@@ -79,7 +80,13 @@ class ServiceConfig {
       id: ServiceId.consumer,
       displayName: 'PQC Telemetry Consumer',
       type: ServiceType.docker,
-      description: 'ML-KEM/ML-DSA decryptor, audio processor & Besu logger',
+      description: 'ML-KEM/ML-DSA decryptor, sensor telemetry & Besu logger',
+    ),
+    ServiceConfig(
+      id: ServiceId.audioConsumer,
+      displayName: 'PQC Audio Consumer',
+      type: ServiceType.docker,
+      description: 'ML-KEM/ML-DSA live audio stream decryptor & Besu logger',
     ),
     ServiceConfig(
       id: ServiceId.xflServer,

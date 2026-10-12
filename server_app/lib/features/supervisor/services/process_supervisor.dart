@@ -199,6 +199,9 @@ class ProcessSupervisor extends ChangeNotifier {
         case ServiceId.consumer:
           serviceName = 'consumer';
           break;
+        case ServiceId.audioConsumer:
+          serviceName = 'audio-consumer';
+          break;
         case ServiceId.xflServer:
           serviceName = 'xfl';
           break;
@@ -302,6 +305,9 @@ class ProcessSupervisor extends ChangeNotifier {
         case ServiceId.consumer:
           serviceName = 'consumer';
           break;
+        case ServiceId.audioConsumer:
+          serviceName = 'audio-consumer';
+          break;
         case ServiceId.xflServer:
           serviceName = 'xfl';
           break;
@@ -320,6 +326,9 @@ class ProcessSupervisor extends ChangeNotifier {
     switch (id) {
       case ServiceId.consumer:
         serviceName = 'consumer';
+        break;
+      case ServiceId.audioConsumer:
+        serviceName = 'audio-consumer';
         break;
       case ServiceId.xflServer:
         serviceName = 'xfl';

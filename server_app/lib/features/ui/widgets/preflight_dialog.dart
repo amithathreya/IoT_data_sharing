@@ -19,7 +19,7 @@ class PreflightDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: AppTheme.border),
@@ -33,8 +33,11 @@ class PreflightDialog extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.fact_check_outlined,
-                    color: AppTheme.statusCyan, size: 22),
+                const Icon(
+                  Icons.fact_check_outlined,
+                  color: AppTheme.primaryBlue,
+                  size: 22,
+                ),
                 const SizedBox(width: 10),
                 const Text(
                   'ENVIRONMENT PREFLIGHT AUDIT',
@@ -47,15 +50,15 @@ class PreflightDialog extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 18),
+                  icon: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               'Audited at ${report.timestamp.toLocal().toString().split('.').first}',
-              style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+              style: const TextStyle(color: AppTheme.textMuted, fontSize: 11.5),
             ),
             const SizedBox(height: 16),
             const Divider(color: AppTheme.border, height: 1),
@@ -64,19 +67,21 @@ class PreflightDialog extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: report.items.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final item = report.items[index];
                   final isOk = item.isSatisfied;
                   final statusColor =
                       isOk ? AppTheme.statusGreen : (item.isCritical ? AppTheme.statusRed : AppTheme.statusAmber);
+                  final statusBg =
+                      isOk ? AppTheme.statusGreenLight : (item.isCritical ? AppTheme.statusRedLight : AppTheme.statusAmberLight);
 
                   return Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceElevated.withOpacity(0.5),
+                      color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withOpacity(0.3)),
+                      border: Border.all(color: AppTheme.border),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,17 +109,25 @@ class PreflightDialog extends StatelessWidget {
                                 item.description,
                                 style: const TextStyle(
                                   color: AppTheme.textSecondary,
-                                  fontSize: 11,
+                                  fontSize: 11.5,
                                 ),
                               ),
                               if (item.errorOrWarning != null) ...[
                                 const SizedBox(height: 6),
-                                Text(
-                                  item.errorOrWarning!,
-                                  style: TextStyle(
-                                    color: statusColor,
-                                    fontSize: 11,
-                                    fontFamily: 'monospace',
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: statusBg,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    item.errorOrWarning!,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 11,
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -128,10 +141,11 @@ class PreflightDialog extends StatelessWidget {
                             icon: const Icon(Icons.download_rounded, size: 14),
                             label: Text(isFixingNodeDeps ? 'Installing...' : 'Install'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.statusCyan.withOpacity(0.2),
-                              foregroundColor: AppTheme.statusCyan,
+                              backgroundColor: AppTheme.primaryBlue,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              textStyle: const TextStyle(fontSize: 11),
+                              textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
@@ -149,10 +163,19 @@ class PreflightDialog extends StatelessWidget {
                   onPressed: onRefresh,
                   icon: const Icon(Icons.refresh, size: 16),
                   label: const Text('Re-run Audit'),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.borderSubtle),
+                    foregroundColor: AppTheme.textPrimary,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
                   child: const Text('Close'),
                 ),
               ],

@@ -25,7 +25,7 @@ class ServerSupervisorApp extends StatelessWidget {
     return MaterialApp(
       title: 'PQC Security Server Supervisor',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: HomeScreen(
         repoRoot: repoRoot,
         enableWatchdog: enableWatchdog,

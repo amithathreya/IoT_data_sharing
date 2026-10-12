@@ -15,15 +15,15 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 load_dotenv()
 
-# ── Configuration ─────────────────────────────
-BROKER_HOST   = "127.0.0.1"
-BROKER_PORT   = 5671
-AMQP_USER     = "pqc_user"
-AMQP_PASSWORD = "pqc_password"
+# ── Configuration (Environment / Docker Aware) ─────────────────
+BROKER_HOST   = os.getenv("BROKER_HOST", "127.0.0.1")
+BROKER_PORT   = int(os.getenv("BROKER_PORT", "5671"))
+AMQP_USER     = os.getenv("AMQP_USER", "pqc_user")
+AMQP_PASSWORD = os.getenv("AMQP_PASSWORD", "pqc_password")
 EXCHANGE_NAME = "audio_stream"
 
 # ── Blockchain Configuration ───────────────────────────────────
-BESU_RPC_URL = "http://127.0.0.1:8545"
+BESU_RPC_URL = os.getenv("BESU_RPC_URL", "http://127.0.0.1:8545")
 w3 = Web3(Web3.HTTPProvider(BESU_RPC_URL))
 
 CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0x0000000000000000000000000000000000000000")
@@ -81,7 +81,7 @@ if os.path.exists(KEM_KEY_PATH):
         CONSUMER_KEM_PRIV = f.read()
 
 # ── Dashboard Direct Streaming ──────────────────────────────
-DASHBOARD_URL = "http://localhost:4000/api/audio_stream"
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:4000/api/audio_stream")
 
 def push_to_dashboard(payload):
     headers = {"Content-Type": "application/json"}

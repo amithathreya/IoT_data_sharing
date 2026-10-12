@@ -26,6 +26,7 @@ void main() {
     expect(find.text('Hyperledger Besu'), findsWidgets);
     expect(find.text('Dashboard Backend'), findsWidgets);
     expect(find.text('PQC Telemetry Consumer'), findsWidgets);
+    expect(find.text('PQC Audio Consumer'), findsWidgets);
     expect(find.text('XFL Federated Server'), findsWidgets);
     expect(find.text('Grafana & Metrics'), findsWidgets);
   });

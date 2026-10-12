@@ -19,6 +19,9 @@ Start-Sleep -Seconds 5
 Write-Host "Starting Consumer (server.py)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", ".\venv\Scripts\activate; python server.py"
 
+Write-Host "Starting Audio Consumer (audio_consumer.py)..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", ".\venv\Scripts\activate; python audio_consumer.py"
+
 Write-Host "=====================================================" -ForegroundColor Cyan
 Write-Host "All services started! Separate windows have been opened." -ForegroundColor Cyan
 Write-Host "Dashboard available at: http://localhost:5173" -ForegroundColor Yellow
