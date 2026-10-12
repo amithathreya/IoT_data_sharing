@@ -10,7 +10,7 @@ import numpy as np
 import pickle
 import base64
 
-DASHBOARD_URL = "http://localhost:4000/api/xfl"
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:4000/api/xfl")
 
 def push_xfl_round(payload):
     """Pushes XFL round metrics to the unified React dashboard."""
@@ -20,10 +20,10 @@ def push_xfl_round(payload):
         pass  # Dashboard being down should never interrupt FL
 
 # ── AMQP & PQC Config ──────────────────────────────────────────
-BROKER_HOST   = "127.0.0.1"
-BROKER_PORT   = 5671
-AMQP_USER     = "pqc_user"
-AMQP_PASSWORD = "pqc_password"
+BROKER_HOST   = os.getenv("BROKER_HOST", "127.0.0.1")
+BROKER_PORT   = int(os.getenv("BROKER_PORT", "5671"))
+AMQP_USER     = os.getenv("AMQP_USER", "pqc_user")
+AMQP_PASSWORD = os.getenv("AMQP_PASSWORD", "pqc_password")
 EXCHANGE_UPDATES = "fl_updates"
 EXCHANGE_GLOBAL  = "fl_global"
 MIN_CLIENTS_PER_ROUND = 1  # Adjust this based on how many clients you have

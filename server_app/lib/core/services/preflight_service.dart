@@ -98,12 +98,12 @@ class PreflightService {
     }
     items.add(PreflightItem(
       id: 'python_venv',
-      name: 'Python Environment (venv)',
-      description: 'Virtual environment for PQC consumer & Federated Learning server',
+      name: 'Python Environment (Host)',
+      description: 'Host environment (optional, as PQC consumer runs containerized in Docker)',
       isSatisfied: pythonVenvOk,
       errorOrWarning: pythonError,
       fixActionLabel: 'Create venv',
-      isCritical: false, // Can fallback to system python if packages installed
+      isCritical: false,
     ));
 
     // 4. Check Certs & PQC Keys
@@ -151,11 +151,11 @@ class PreflightService {
   Future<ProcessResult> installNodeDependencies() async {
     final backendDir = p.join(repoRoot.path, 'dashboard-backend');
     final npm = PlatformAdapter.getNpmExecutable();
-    return await Process.run(npm, ['install'], workingDirectory: backendDir);
+    return await Process.run(npm, ['install'], workingDirectory: backendDir, runInShell: true);
   }
 
   /// Automatically creates virtualenv
   Future<ProcessResult> createPythonVenv() async {
-    return await Process.run('python', ['-m', 'venv', 'venv'], workingDirectory: repoRoot.path);
+    return await Process.run('python', ['-m', 'venv', 'venv'], workingDirectory: repoRoot.path, runInShell: true);
   }
 }

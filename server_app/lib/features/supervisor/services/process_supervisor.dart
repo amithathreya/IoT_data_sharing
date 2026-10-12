@@ -75,6 +75,16 @@ class ProcessSupervisor extends ChangeNotifier {
             state.status = ServiceStatus.stopped;
           }
         }
+      } else if (config.type == ServiceType.docker) {
+        if (state.status == ServiceStatus.running || state.status == ServiceStatus.starting) {
+          final isRunning = await _isDockerContainerRunning(config.id);
+          if (isRunning && state.status == ServiceStatus.starting) {
+            state.status = ServiceStatus.running;
+            state.startedAt ??= DateTime.now();
+          } else if (!isRunning && state.status == ServiceStatus.running) {
+            state.status = ServiceStatus.stopped;
+          }
+        }
       }
     }
     notifyListeners();
@@ -173,13 +183,28 @@ class ProcessSupervisor extends ChangeNotifier {
 
     String workDir = repoRoot.path;
     List<String> args;
+    String serviceName = '';
 
     if (id == ServiceId.besu) {
       workDir = p.join(repoRoot.path, 'besu-network');
       args = ['compose', 'up', '-d'];
     } else {
-      // RabbitMQ and Grafana are in root docker-compose.yml
-      final serviceName = id == ServiceId.rabbitmq ? 'rabbitmq' : 'grafana';
+      switch (id) {
+        case ServiceId.rabbitmq:
+          serviceName = 'rabbitmq';
+          break;
+        case ServiceId.grafana:
+          serviceName = 'grafana';
+          break;
+        case ServiceId.consumer:
+          serviceName = 'consumer';
+          break;
+        case ServiceId.xflServer:
+          serviceName = 'xfl';
+          break;
+        default:
+          serviceName = '';
+      }
       args = ['compose', 'up', '-d', serviceName];
     }
 
@@ -194,7 +219,43 @@ class ProcessSupervisor extends ChangeNotifier {
         serviceId: id,
         text: 'Docker container started: ${result.stdout.toString().trim()}',
       );
-      // Let watchdog verify the port
+
+      if (state.config.primaryPort == null) {
+        state.status = ServiceStatus.running;
+        state.startedAt = DateTime.now();
+      }
+
+      // Stream docker container logs live to console
+      if (serviceName.isNotEmpty) {
+        try {
+          final logProc = await Process.start(
+            dockerCmd,
+            ['compose', 'logs', '-f', serviceName],
+            workingDirectory: workDir,
+            mode: ProcessStartMode.normal,
+          );
+          _runningProcesses[id] = logProc;
+
+          logProc.stdout
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())
+              .listen((line) {
+            if (line.isNotEmpty) {
+              logAggregator.addLog(serviceId: id, text: line);
+            }
+          });
+          logProc.stderr
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())
+              .listen((line) {
+            if (line.isNotEmpty) {
+              logAggregator.addLog(serviceId: id, text: line, isError: true);
+            }
+          });
+        } catch (_) {}
+      }
+
+      notifyListeners();
       return true;
     } else {
       final err = result.stderr.toString().trim();
@@ -217,6 +278,11 @@ class ProcessSupervisor extends ChangeNotifier {
   }
 
   Future<void> _stopDockerService(ServiceId id) async {
+    final logProc = _runningProcesses.remove(id);
+    if (logProc != null) {
+      await PlatformAdapter.killProcessTree(logProc.pid);
+    }
+
     final dockerCmd = PlatformAdapter.getDockerExecutable();
     String workDir = repoRoot.path;
     List<String> args;
@@ -225,11 +291,61 @@ class ProcessSupervisor extends ChangeNotifier {
       workDir = p.join(repoRoot.path, 'besu-network');
       args = ['compose', 'stop'];
     } else {
-      final serviceName = id == ServiceId.rabbitmq ? 'rabbitmq' : 'grafana';
+      String serviceName;
+      switch (id) {
+        case ServiceId.rabbitmq:
+          serviceName = 'rabbitmq';
+          break;
+        case ServiceId.grafana:
+          serviceName = 'grafana';
+          break;
+        case ServiceId.consumer:
+          serviceName = 'consumer';
+          break;
+        case ServiceId.xflServer:
+          serviceName = 'xfl';
+          break;
+        default:
+          serviceName = '';
+      }
       args = ['compose', 'stop', serviceName];
     }
 
     await Process.run(dockerCmd, args, workingDirectory: workDir);
+  }
+
+  Future<bool> _isDockerContainerRunning(ServiceId id) async {
+    final dockerCmd = PlatformAdapter.getDockerExecutable();
+    String serviceName;
+    switch (id) {
+      case ServiceId.consumer:
+        serviceName = 'consumer';
+        break;
+      case ServiceId.xflServer:
+        serviceName = 'xfl';
+        break;
+      case ServiceId.rabbitmq:
+        serviceName = 'rabbitmq';
+        break;
+      case ServiceId.grafana:
+        serviceName = 'grafana';
+        break;
+      default:
+        return false;
+    }
+
+    try {
+      final res = await Process.run(
+        dockerCmd,
+        ['compose', 'ps', '--services', '--filter', 'status=running'],
+        workingDirectory: repoRoot.path,
+      );
+      if (res.exitCode == 0) {
+        final lines = res.stdout.toString().split(RegExp(r'\r?\n'));
+        return lines.map((l) => l.trim()).contains(serviceName);
+      }
+    } catch (_) {}
+    return false;
   }
 
   // ── Node.js Start ───────────────────────────────────────────────

@@ -16,18 +16,18 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 load_dotenv()
 
-# ── Configuration (Windows Native) ─────────────────────────────
-BROKER_HOST   = "127.0.0.1"
-BROKER_PORT   = 5671
-AMQP_USER     = "pqc_user"
-AMQP_PASSWORD = "pqc_password"
+# ── Configuration (Environment / Docker Aware) ─────────────────
+BROKER_HOST   = os.getenv("BROKER_HOST", "127.0.0.1")
+BROKER_PORT   = int(os.getenv("BROKER_PORT", "5671"))
+AMQP_USER     = os.getenv("AMQP_USER", "pqc_user")
+AMQP_PASSWORD = os.getenv("AMQP_PASSWORD", "pqc_password")
 EXCHANGE_NAME = "sensors"
 
-GRAFANA_URL   = "http://localhost:3000/api/live/push/pqc_consume"
+GRAFANA_URL   = os.getenv("GRAFANA_URL", "http://localhost:3000/api/live/push/pqc_consume")
 GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 
 # ── Blockchain Configuration ───────────────────────────────────
-BESU_RPC_URL = "http://127.0.0.1:8545"
+BESU_RPC_URL = os.getenv("BESU_RPC_URL", "http://127.0.0.1:8545")
 w3 = Web3(Web3.HTTPProvider(BESU_RPC_URL))
 
 # Ensure these environment variables are set with your deployed contract info
@@ -107,7 +107,7 @@ else:
 
 
 # ── Dashboard Direct Streaming ──────────────────────────────
-DASHBOARD_URL = "http://localhost:4000/api/data"
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:4000/api/data")
 
 def push_to_dashboard(payload):
     """Pushes live metrics, anomalies, and blockchain logs to the unified React dashboard."""
