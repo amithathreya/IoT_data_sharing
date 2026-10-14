@@ -104,7 +104,7 @@ class ServiceConfig {
       id: ServiceId.xflServer,
       displayName: 'XFL Federated Server',
       type: ServiceType.docker,
-      description: 'Post-Quantum Federated Learning Global Aggregator',
+      description: 'ML-KEM encrypted model rounds; 2 unique clients required by default. Live anomaly alerts print on each client.',
     ),
     ServiceConfig(
       id: ServiceId.grafana,

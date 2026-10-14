@@ -9,8 +9,6 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import psutil
-import pickle
-import base64
 import threading
 import collections
 
@@ -46,6 +44,8 @@ class NetworkMonitor:
         # Each sample is a (scaled_sent, scaled_recv) pair. We keep the last
         # window_size * 2 values so we always have enough for training sequences.
         self.buffer = collections.deque(maxlen=window_size * 2)
+        self.lock = threading.Lock()
+        self.latest_window = None
         self._thread = threading.Thread(target=self._run, daemon=True)
 
     def start(self):
@@ -62,14 +62,18 @@ class NetworkMonitor:
             prev_io = curr_io
             scaled_sent = np.log1p(bytes_sent) / 10.0
             scaled_recv = np.log1p(bytes_recv) / 10.0
-            self.buffer.extend([scaled_sent, scaled_recv])
+            with self.lock:
+                self.buffer.extend([scaled_sent, scaled_recv])
+                if len(self.buffer) >= 20:
+                    self.latest_window = np.asarray(list(self.buffer)[-20:], dtype=np.float32)
 
     def get_training_data(self, num_samples=20):
         """
         Build a training dataset from the current rolling buffer.
         Returns (X_train, y_train) ready for the Loss-Gating loop.
         """
-        buf = list(self.buffer)  # snapshot
+        with self.lock:
+            buf = list(self.buffer)  # snapshot
         X_train, y_train = [], []
 
         # Slide a window of 20 values across the buffer to create sequences
@@ -111,10 +115,10 @@ class NetworkMonitor:
         return np.array(X_train), np.array(y_train)
 
 # ── AMQP & PQC Config ──────────────────────────────────────────
-BROKER_HOST   = "127.0.0.1"
-BROKER_PORT   = 5671
-AMQP_USER     = "pqc_user"
-AMQP_PASSWORD = "pqc_password"
+BROKER_HOST   = os.getenv("BROKER_HOST", "127.0.0.1")
+BROKER_PORT   = int(os.getenv("BROKER_PORT", "5671"))
+AMQP_USER     = os.getenv("AMQP_USER", "pqc_user")
+AMQP_PASSWORD = os.getenv("AMQP_PASSWORD", "pqc_password")
 EXCHANGE_UPDATES = "fl_updates"
 EXCHANGE_GLOBAL  = "fl_global"
 
@@ -132,16 +136,23 @@ def make_tls_context() -> ssl.SSLContext:
     ctx.minimum_version = ssl.TLSVersion.TLSv1_3
     ctx.maximum_version = ssl.TLSVersion.TLSv1_3
     ctx.load_verify_locations(CA_CERT)
-    ctx.load_cert_chain(CLIENT_CERT, CLIENT_KEY)
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_REQUIRED
     return ctx
 
 def serialize_weights(weights):
-    return base64.b64encode(pickle.dumps(weights)).decode('utf-8')
+    return [np.asarray(w).tolist() for w in weights]
 
-def deserialize_weights(b64_str):
-    return pickle.loads(base64.b64decode(b64_str))
+def deserialize_weights(encoded, reference_weights):
+    if not isinstance(encoded, list) or len(encoded) != len(reference_weights):
+        raise ValueError("Invalid model weight list")
+    result = []
+    for item, reference in zip(encoded, reference_weights):
+        array = np.asarray(item, dtype=np.float32)
+        if array.shape != reference.shape or not np.isfinite(array).all() or np.max(np.abs(array), initial=0) > 1e3:
+            raise ValueError("Invalid model weight shape or values")
+        result.append(array)
+    return result
 
 class FederatedClient:
     def __init__(self, cid):
@@ -149,6 +160,9 @@ class FederatedClient:
         self.model = get_model()
         self.threshold_history = collections.deque(maxlen=100)
         self.k = 3.0
+        self.model_lock = threading.RLock()
+        self.current_round = 1
+        self.initial_update_scheduled = False
         self.channel = None
         self.state_lock = threading.Lock()
         self.pending_global_weights = None
@@ -166,6 +180,8 @@ class FederatedClient:
         # will be reflected in the next training round automatically.
         self.network_monitor = NetworkMonitor(window_size=30, interval=2.5)
         self.network_monitor.start()
+        threading.Thread(target=self._score_live_traffic, daemon=True).start()
+        threading.Thread(target=self._wait_for_initial_data, daemon=True).start()
 
         # Publisher ML-DSA-65 Signer
         self.publisher_signer = oqs.Signature("ML-DSA-65")
@@ -229,9 +245,11 @@ class FederatedClient:
                 self.pending_global_weights = None
 
             if next_weights is not None:
-                self.model.set_weights(next_weights)
+                with self.model_lock:
+                    self.model.set_weights(next_weights)
                 try:
-                    self._safe_save_weights(self.weights_out)
+                    with self.model_lock:
+                        self._safe_save_weights(self.weights_out)
                 except Exception as e:
                     print(f"[Client {self.cid}] Could not persist received global weights: {e}")
 
@@ -267,29 +285,49 @@ class FederatedClient:
         self.channel.queue_bind(exchange=EXCHANGE_GLOBAL, queue=result.method.queue)
         self.channel.basic_consume(queue=result.method.queue, on_message_callback=self.on_global_weights)
 
-        self._schedule_training()
-
         print(f"[Client {self.cid}] Waiting for global FL updates...")
         self.channel.start_consuming()
 
-    @tf.function(reduce_retracing=True)
     def _eval_step(self, x_batch):
-        return self.model(x_batch, training=False)
+        with self.model_lock:
+            return self.model(x_batch, training=False)
 
-    @tf.function(reduce_retracing=True)
     def _train_step(self, x_batch):
-        with tf.GradientTape() as tape:
-            reconstruction = self.model(x_batch, training=True)
-            loss_value = tf.reduce_mean(tf.square(x_batch - reconstruction))
-        grads = tape.gradient(loss_value, self.model.trainable_weights)
-        self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
-        return loss_value
+        with self.model_lock:
+            with tf.GradientTape() as tape:
+                reconstruction = self.model(x_batch, training=True)
+                loss_value = tf.reduce_mean(tf.square(x_batch - reconstruction))
+            grads = tape.gradient(loss_value, self.model.trainable_weights)
+            self.model.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
+            return loss_value
+
+    def _wait_for_initial_data(self):
+        while True:
+            with self.network_monitor.lock:
+                ready = len(self.network_monitor.buffer) >= 20 and self.channel is not None
+            if ready:
+                if not self.initial_update_scheduled:
+                    self.initial_update_scheduled = True
+                    self._schedule_training()
+                return
+            time.sleep(1.0)
+
+    def _score_live_traffic(self):
+        last_window = None
+        while True:
+            with self.network_monitor.lock:
+                window = None if self.network_monitor.latest_window is None else self.network_monitor.latest_window.copy()
+            if window is not None and (last_window is None or not np.array_equal(last_window, window)):
+                batch = tf.convert_to_tensor(window.reshape(1, -1), dtype=tf.float32)
+                reconstruction = self._eval_step(batch)
+                score = float(tf.reduce_mean(tf.square(batch - reconstruction)))
+                threshold = max(float(np.mean(self.threshold_history) + self.k * np.std(self.threshold_history)), 0.05) if len(self.threshold_history) > 10 else 1.0
+                if score >= threshold:
+                    print(f"[Client {self.cid}] LIVE ANOMALY score={score:.5f}, threshold={threshold:.5f}")
+                last_window = window
+            time.sleep(0.5)
 
     def train_and_send(self):
-        # Reset threshold history each round so stale history from a previous
-        # round never poisons the next one's dynamic threshold calculation.
-        self.threshold_history.clear()
-
         print(f"[Client {self.cid}] Fetching latest network data from live monitor for training...")
         x_train, y_train = self.network_monitor.get_training_data(num_samples=20)
 
@@ -335,17 +373,13 @@ class FederatedClient:
                 # Switch to train mode and backpropagate
                 self._train_step(x_batch_tf)
         
-        # Free up memory explicitly
-        import gc
-        gc.collect()
-        tf.keras.backend.clear_session()
-        
         avg_loss = total_loss / trained_samples if trained_samples > 0 else 0.0
         
         current_threshold = 1.0
         try:
-            if not self._safe_save_weights(self.weights_out):
-                raise BlockingIOError("local_model.weights.h5 remained locked after retries")
+            with self.model_lock:
+                if not self._safe_save_weights(self.weights_out):
+                    raise BlockingIOError("local_model.weights.h5 remained locked after retries")
             
             if len(self.threshold_history) > 10:
                 mu_loss = np.mean(self.threshold_history)
@@ -359,9 +393,11 @@ class FederatedClient:
         except Exception as e:
             print(f"[Client] Could not save weights or threshold: {e}")
 
-        weights_data = serialize_weights(self.model.get_weights())
+        with self.model_lock:
+            weights_data = serialize_weights(self.model.get_weights())
         payload = json.dumps({
             "cid": self.cid,
+            "round": self.current_round,
             "weights": weights_data,
             "avg_loss": avg_loss,
             "threshold": current_threshold,
@@ -404,26 +440,34 @@ class FederatedClient:
 
     def on_global_weights(self, ch, method, properties, body):
         print(f"\n[Client {self.cid}] Received new global weights!")
-        envelope = json.loads(body)
-
-        kem_cipher   = bytes.fromhex(envelope["kem_cipher"])
-        nonce        = bytes.fromhex(envelope["nonce"])
-        enc_payload  = bytes.fromhex(envelope["enc_payload"])
-        signature    = bytes.fromhex(envelope["signature"])
-        pub_sig_key  = bytes.fromhex(envelope["pub_sig_key"])
-
-        auth_data = kem_cipher + nonce + enc_payload
-        with oqs.Signature("ML-DSA-65") as verifier:
-            if not verifier.verify(auth_data, signature, pub_sig_key):
-                print(" ❌ INVALID SIGNATURE from Server!\n")
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-                return
-
-        # Server broadcasts use a random AES key passed in kem_cipher (TLS secures the link)
-        shared_secret = kem_cipher
-
-        aesgcm = AESGCM(shared_secret[:32])
+        if len(body) > 10_000_000:
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            print(f"[Client {self.cid}] Rejected oversized global model")
+            return
         try:
+            envelope = json.loads(body)
+
+            kem_cipher   = bytes.fromhex(envelope["kem_cipher"])
+            nonce        = bytes.fromhex(envelope["nonce"])
+            enc_payload  = bytes.fromhex(envelope["enc_payload"])
+            signature    = bytes.fromhex(envelope["signature"])
+            pub_sig_key  = bytes.fromhex(envelope["pub_sig_key"])
+
+            auth_data = kem_cipher + nonce + enc_payload
+            with oqs.Signature("ML-DSA-65") as verifier:
+                if not verifier.verify(auth_data, signature, pub_sig_key):
+                    raise ValueError("Invalid server signature")
+        except Exception as e:
+            print(f"[Client {self.cid}] Rejected malformed global update: {e}")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+
+        try:
+            if not self.CONSUMER_KEM_PRIV:
+                raise ValueError("Missing client ML-KEM private key")
+            with oqs.KeyEncapsulation("ML-KEM-768", self.CONSUMER_KEM_PRIV) as kem:
+                shared_secret = kem.decap_secret(kem_cipher)
+            aesgcm = AESGCM(shared_secret[:32])
             decrypted_bytes = aesgcm.decrypt(nonce, enc_payload, None)
             data = json.loads(decrypted_bytes)
         except Exception as e:
@@ -431,7 +475,17 @@ class FederatedClient:
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        global_weights = deserialize_weights(data["weights"])
+        try:
+            received_round = int(data.get("round", -1))
+            if received_round < self.current_round:
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+                return
+            global_weights = deserialize_weights(data["weights"], self.model.get_weights())
+        except Exception as e:
+            print(f"[Client {self.cid}] Rejected invalid global model: {e}")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+        self.current_round = received_round + 1
         ch.basic_ack(delivery_tag=method.delivery_tag)
         self._schedule_training(global_weights)
 

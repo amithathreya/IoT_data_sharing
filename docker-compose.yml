@@ -83,6 +83,7 @@ services:
     environment:
       - BROKER_HOST=rabbitmq
       - BROKER_PORT=5671
+      - XFL_MIN_CLIENTS_PER_ROUND=${XFL_MIN_CLIENTS_PER_ROUND:-2}
       - DASHBOARD_URL=http://host.docker.internal:4000/api/xfl
     volumes:
       - ./certs:/app/certs:ro

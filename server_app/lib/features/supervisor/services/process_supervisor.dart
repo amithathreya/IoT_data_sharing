@@ -208,7 +208,13 @@ class ProcessSupervisor extends ChangeNotifier {
         default:
           serviceName = '';
       }
-      args = ['compose', 'up', '-d', serviceName];
+      args = ['compose', 'up', '-d'];
+      if (id == ServiceId.xflServer) {
+        // Refresh the Python XFL server image when starting it. Compose only
+        // builds the selected XFL service; the RabbitMQ service/image is reused.
+        args.add('--build');
+      }
+      args.add(serviceName);
     }
 
     final result = await Process.run(
