@@ -103,8 +103,10 @@ class ServiceConfig {
     ServiceConfig(
       id: ServiceId.xflServer,
       displayName: 'XFL Federated Server',
-      type: ServiceType.docker,
+      type: ServiceType.python,
       description: 'Post-Quantum Federated Learning Global Aggregator',
+      scriptPath: 'server_xfl.py',
+      workingDir: 'xtreme_federated_learning',
     ),
     ServiceConfig(
       id: ServiceId.grafana,
